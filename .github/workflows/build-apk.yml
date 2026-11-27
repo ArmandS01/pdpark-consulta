@@ -1,0 +1,169 @@
+name: Compilar APK
+
+on:
+  push:
+    paths-ignore:
+      - 'assets/**'
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      APP_ID: ${{ vars.APP_ID }}
+      APP_NAME: PD Park
+      LICENSE_PUBKEY: ${{ vars.LICENSE_PUBKEY }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v6
+
+      - name: Instalar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Instalar Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Preparar la app web
+        run: |
+          set -e
+          test -f index.html || { echo "Falta index.html en la raíz del repositorio"; exit 1; }
+          mkdir -p www
+          cp index.html www/index.html
+          # Librerías de QR: se guardan dentro de la app para que funcione sin internet.
+          # Cada una se busca en varias fuentes y se comprueba que el archivo sea el correcto.
+          get_lib() {
+            out="$1"; mark="$2"; shift 2
+            for u in "$@"; do
+              if curl -fsSL --retry 2 "$u" -o "www/$out" && [ -s "www/$out" ] && grep -q "$mark" "www/$out"; then
+                echo "Incluida $out (desde $u)"; return 0
+              fi
+            done
+            rm -f "www/$out"; echo "No se pudo descargar $out"; return 1
+          }
+          if get_lib qrcode.min.js QRCode \
+               https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js \
+               https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js \
+               https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js; then
+            sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js#qrcode.min.js#' www/index.html
+          else
+            echo "ERROR: no se pudo incluir la librería de QR dentro de la app. Vuelve a compilar."
+            exit 1
+          fi
+          if get_lib jsQR.min.js jsQR \
+               https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js \
+               https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js \
+               https://unpkg.com/jsqr@1.4.0/dist/jsQR.js; then
+            sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js#jsQR.min.js#' www/index.html
+          else
+            echo "ERROR: no se pudo incluir la librería de lectura de QR dentro de la app. Vuelve a compilar."
+            exit 1
+          fi
+          # Comprobación final: la app no debe depender de internet para los códigos QR
+          for f in qrcode.min.js jsQR.min.js; do
+            test -s "www/$f" || { echo "ERROR: falta www/$f"; exit 1; }
+          done
+          if grep -q "cdnjs.cloudflare.com" www/index.html; then
+            echo "ERROR: index.html todavía pide librerías a internet."; exit 1
+          fi
+          echo "Librerías de QR incluidas dentro de la app: funciona sin internet."
+          # Versión y fecha de compilación (se muestran en el menú del icono PD)
+          BUILD_VER="1.${{ github.run_number }}"
+          BUILD_DATE=$(TZ=America/Mexico_City date '+%d/%m/%Y %H:%M')
+          sed -i "s|__BUILD_VERSION__|$BUILD_VER|g; s|__BUILD_DATE__|$BUILD_DATE|g" www/index.html
+          echo "Versión $BUILD_VER compilada el $BUILD_DATE"
+          # Licencia: si existe la variable LICENSE_PUBKEY se activa la licencia
+          if [ -n "$LICENSE_PUBKEY" ]; then
+            sed -i "s|__LICENSE_PUBKEY__|$LICENSE_PUBKEY|g" www/index.html
+            echo "Licencia activada en esta compilación."
+          else
+            echo "Sin LICENSE_PUBKEY: la app se compila sin licencia."
+          fi
+
+      - name: Crear el proyecto Android
+        run: |
+          set -e
+          APP_ID="${APP_ID:-com.pdpark.app}"
+          echo "Identificador de la app: $APP_ID"
+          echo '{"name":"pd-park","version":"1.0.0","private":true}' > package.json
+          npm install --no-audit --no-fund @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6 @capacitor/app@6
+          # Plugin de Bluetooth clásico (impresora). Si el nombre de npm falla, se instala desde GitHub.
+          npm install --no-audit --no-fund cordova-plugin-bluetooth-classic-serial-port \
+            || npm install --no-audit --no-fund github:kenjdavidson/cordova-plugin-bluetooth-classic-serial-port
+          cat > capacitor.config.json <<JSON
+          {
+            "appId": "$APP_ID",
+            "appName": "$APP_NAME",
+            "webDir": "www"
+          }
+          JSON
+          npx cap add android
+          npx cap sync android
+
+      - name: Permisos, versión e iconos
+        run: |
+          set -e
+          python3 - <<'PY'
+          import re
+          p='android/app/src/main/AndroidManifest.xml'
+          s=open(p,encoding='utf8').read()
+          perms=['android.permission.CAMERA','android.permission.BLUETOOTH','android.permission.BLUETOOTH_ADMIN','android.permission.BLUETOOTH_CONNECT','android.permission.BLUETOOTH_SCAN']
+          add=''
+          for x in perms:
+              if x not in s:
+                  add+='    <uses-permission android:name="%s" />\n'%x
+          if 'android.hardware.camera' not in s:
+              add+='    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
+          s=s.replace('<application',add+'    <application',1)
+          open(p,'w',encoding='utf8').write(s)
+          g='android/app/build.gradle'
+          t=open(g,encoding='utf8').read()
+          import os
+          n=os.environ.get('RUN_NUMBER','1')
+          t=re.sub(r'versionCode\s+\d+','versionCode '+n,t,1)
+          t=re.sub(r'versionName\s+"[^"]*"','versionName "1.'+n+'"',t,1)
+          open(g,'w',encoding='utf8').write(t)
+          PY
+          if [ -f assets/icon-only.png ]; then
+            npm install --no-audit --no-fund @capacitor/assets@3
+            npx capacitor-assets generate --android --iconBackgroundColor '#006d33' --iconBackgroundColorDark '#006d33' || echo "No se pudieron generar los iconos; se usa el icono por defecto."
+          else
+            echo "No hay carpeta assets con icon-only.png; se usa el icono por defecto."
+          fi
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+
+      - name: Compilar y firmar el APK
+        run: |
+          set -e
+          cd android
+          chmod +x gradlew
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            for i in 1 2 3; do ./gradlew --no-daemon assembleRelease && break || { echo "Reintento $i"; sleep 10; }; done
+            test -f app/build/outputs/apk/release/app-release-unsigned.apk
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/llave.keystore"
+            BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+            "$BT/zipalign" -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/alineado.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/llave.keystore" --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:$KEYSTORE_PASSWORD" --out "$RUNNER_TEMP/pd-park.apk" "$RUNNER_TEMP/alineado.apk"
+            "$BT/apksigner" verify "$RUNNER_TEMP/pd-park.apk"
+          else
+            echo "Sin llaves de firma: se compila el APK de prueba (debug)."
+            for i in 1 2 3; do ./gradlew --no-daemon assembleDebug && break || { echo "Reintento $i"; sleep 10; }; done
+            cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/pd-park.apk"
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/salida"
+          cp "$RUNNER_TEMP/pd-park.apk" "$GITHUB_WORKSPACE/salida/pd-park.apk"
+
+      - name: Guardar el APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: estacionamiento-apk
+          path: salida/pd-park.apk
+          retention-days: 30
