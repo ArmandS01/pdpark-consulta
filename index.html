@@ -803,6 +803,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     </div>
     <button class="btn" id="pwSave" type="button">Activar clave</button>
     <div id="pwMsg" class="msg" role="status"></div>
+    <label class="chk"><input type="checkbox" id="cfgCutPwd">Pedir clave para el corte total</label>
+    <p class="hint">Si está activada, el corte total pide la clave de administrador. El corte parcial nunca la pide. Cambiar esta opción pide la clave.</p>
+    <div id="cutPwdMsg" class="msg" role="status"></div>
     </div>
   </section>
 <section id="pensiones" class="panel hidden" role="tabpanel">
@@ -3016,7 +3019,13 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   };
   var dlgOk=false;
   $('dlgNo').onclick=function(){$('dlg').classList.add('hidden')};
-  $('dlgYes').onclick=function(){$('dlg').classList.add('hidden');dlgOk=true;$('cutBtn').click()};
+  $('dlgYes').onclick=function(){$('dlg').classList.add('hidden');var go=function(){dlgOk=true;$('cutBtn').click()};if(cfg.cutPwd===true)admAsk(go);else go()};
+  $('cfgCutPwd').checked=cfg.cutPwd===true;
+  $('cfgCutPwd').addEventListener('change',function(){
+    var el=this,want=el.checked,m=$('cutPwdMsg');el.checked=!want;m.className='msg';m.textContent='';
+    if(want&&!hasPwd()){m.className='msg bad';m.textContent='Primero activa la clave de administrador (arriba en esta pantalla).';return}
+    admAsk(function(){el.checked=want;cfg.cutPwd=want;saveCfg();m.className='msg ok';m.textContent=want?'El corte total pedirá la clave.':'El corte total ya no pedirá la clave.'});
+  });
   $('dlg').addEventListener('click',function(e){if(e.target===this)this.classList.add('hidden')});
   $('cutBtn').onclick=function(){
     var btn=this;
