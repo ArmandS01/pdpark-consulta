@@ -518,6 +518,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <label for="cfgCap">Lugares del estacionamiento</label>
     <input id="cfgCap" type="number" min="1" step="1" value="50">
     <p class="hint">Solo se usa para avisarte cuando ingresan más vehículos que la capacidad.</p>
+    <label class="chk"><input type="checkbox" id="cfgOpsOn">Pedir abrir operaciones para registrar entradas</label>
+    <p class="hint">Si está activado, al iniciar el día hay que tocar «Abrir operaciones» en Entrada y el corte total las cierra. Cambiar esta opción pide la clave de administrador.</p>
     </div>
     <div class="setPage hidden" id="set_tarifas">
       <div class="setHead"><button class="setBack" type="button" data-back="1" aria-label="Regresar a Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5m6-7-7 7 7 7"/></svg><span>Regresar a Ajustes</span></button><h2>Tarifas</h2></div>
@@ -2193,7 +2195,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     box.innerHTML='';
     cutRows(ex,pin).forEach(function(x){box.appendChild(x[2]?headRow(x[0]):statRow(x[0],x[1]))});
     $('cutInside').textContent=all.filter(function(t){return !t.out}).length+' vehículos siguen dentro y no entran en este corte.';
-    btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length||opsIsOpen());$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
+    btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length||opsHas());$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
     renderHist();
   }
   // Historial de cortes: se pueden seleccionar y borrar
@@ -2471,13 +2473,17 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   })};
 
   // ===== Apertura de operaciones: sin abrir no se registran entradas; el corte total las cierra =====
-  function opsIsOpen(){return !!(cfg.ops&&cfg.ops.at)}
+  function opsReq(){return cfg.opsOn!==false}
+  function opsHas(){return !!(cfg.ops&&cfg.ops.at)}
+  function opsIsOpen(){return !opsReq()||opsHas()}
   function opsUI(){
     var open=opsIsOpen();
     $('opsBar').classList.toggle('hidden',open);document.body.classList.toggle('opsClosed',!open);
-    var i=$('opsInfo');i.classList.toggle('hidden',!open);
-    i.textContent=open?'Operaciones abiertas desde el '+fmt(cfg.ops.at)+(cfg.ops.cn?' por '+cfg.ops.cn:'')+'.':'';
+    var i=$('opsInfo'),sh=opsReq()&&opsHas();i.classList.toggle('hidden',!sh);
+    i.textContent=sh?'Operaciones abiertas desde el '+fmt(cfg.ops.at)+(cfg.ops.cn?' por '+cfg.ops.cn:'')+'.':'';
   }
+  $('cfgOpsOn').checked=opsReq();
+  $('cfgOpsOn').addEventListener('change',function(){var el=this,want=el.checked;el.checked=!want;admAsk(function(){el.checked=want;cfg.opsOn=want;saveCfg();opsUI()})});
   $('opsOpenBtn').onclick=function(){
     if(opsIsOpen()){opsUI();return}
     if(cajList().length&&!cajActive){cajGate();return}
@@ -2485,7 +2491,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var m=$('entMsg');m.className='msg ok';m.textContent='Operaciones abiertas a las '+new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+(/\.$/.test(new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}))?'':'.');
   };
   function opsRows(now,closing){
-    if(!opsIsOpen())return [];
+    if(!opsHas())return [];
     var r=[['Operaciones','',1],['Apertura',fmt(cfg.ops.at)+(cfg.ops.cn?' ('+cfg.ops.cn+')':'')]];
     if(closing)r.push(['Cierre',fmt(now)+(cajActive?' ('+cajActive.name+')':'')]);
     return r;
@@ -2999,13 +3005,13 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var btn=this;
     if(!dlgOk){var all0=load(),in0=all0.filter(function(t){return !t.out}).length;$('dlgWarn').textContent='Se borrarán los registros de los '+(all0.length-in0)+' vehículos que ya salieron.'+(in0?' Los '+in0+' que siguen dentro se conservan y se cobran normalmente al salir.':'');$('dlg').classList.remove('hidden');$('dlgNo').focus();return}dlgOk=false;
     var all=load(),ex=pending(all),now=Date.now(),total=sumPaid(ex)+pensSum();
-    var pin=pendingIn(all);if(!ex.length&&!pin.length&&!pensPend().length&&!bathPend().length&&!opsIsOpen())return;
+    var pin=pendingIn(all);if(!ex.length&&!pin.length&&!pensPend().length&&!bathPend().length&&!opsHas())return;
     try{bkSnap('antes')}catch(e){}
     var rec=makeCut(all,ex,pin,now,false);rec.rows=opsRows(now,true).concat(rec.rows);if(cfg.ops){rec.opAt=cfg.ops.at;rec.opBy=cfg.ops.cn||''}cfg.ops=null;saveCfg();opsUI();rec.cleared=all.filter(function(t){return t.out}).length;if($('cutExt').checked)addDetail(rec,ex,pin);
     var cuts=loadCuts();cuts.push(rec);saveCuts(cuts);
     var keep=all.filter(function(t){return !t.out});keep.forEach(function(t){t.cutIn=now;(t.cuts=t.cuts||[]).push(now)});save(keep);pensMarkCut(now);refresh();
     renderCut();
-    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'. Operaciones cerradas. Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
+    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'.'+(opsReq()?' Operaciones cerradas.':'')+' Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
     lastCut=rec;$('cutPrint').classList.remove('hidden');showCutPdf(rec);
   };
 
