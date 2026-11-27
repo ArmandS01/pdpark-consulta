@@ -856,6 +856,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <div class="big" id="cutTotal"></div>
     <div id="cutRows"></div>
     <p class="hint" id="cutInside"></p>
+    <button class="btn alt hidden" id="freeBtn" type="button">Salida sin cobro de vehículos dentro</button>
     <p class="hint">El corte parcial solo genera el reporte y no cierra el periodo. El corte total lo cierra y borra todos los registros de vehículos.</p>
     <label class="chk"><input type="checkbox" id="cutExt">Corte extendido (agrega el detalle de cada vehículo: boleto, placa, entrada, salida y cobro)</label>
     <button class="btn alt" id="cutPartial" type="button">Corte parcial</button>
@@ -970,6 +971,23 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <p><b>La clave de administrador no se puede recuperar.</b> Anótala y guárdala en un lugar seguro.</p>
     <p id="dlgNoteQ"></p>
     <button class="btn" id="dlgNoteOk" type="button">Entendido</button>
+  </div>
+</div>
+<div id="dlgFree" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgFreeT">
+  <div class="box">
+    <h3 id="dlgFreeT">Salida sin cobro</h3>
+    <p class="hint" style="margin-top:0">Marca los vehículos que salen sin pagar. Quedan registrados en el corte con el motivo, el cajero y lo que se dejó de cobrar. Los que no marques siguen dentro y se cobran normalmente.</p>
+    <label class="chk"><input type="checkbox" id="freeAll">Seleccionar todos</label>
+    <div id="freeList" style="max-height:38vh;overflow:auto;margin:6px 0 10px"></div>
+    <label for="freeWhy">Motivo</label>
+    <input id="freeWhy" maxlength="60" placeholder="Ej.: cliente frecuente, se fue sin pagar">
+    <div id="freeCajWrap"><label for="freeCaj" style="margin-top:10px">Cajero</label>
+    <select id="freeCaj"></select></div>
+    <label for="freePin" id="freePinLbl" style="margin-top:10px">NIP del cajero</label>
+    <input id="freePin" type="password" autocomplete="off">
+    <div id="freeErr" class="msg bad" role="alert"></div>
+    <button class="btn" id="freeOk" type="button">Dar salida sin cobro</button>
+    <button class="btn alt" id="freeNo" type="button">Cancelar</button>
   </div>
 </div>
 <div id="dlgCaj" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgCajT">
@@ -1927,6 +1945,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     });
     var adj=ex.filter(function(t){return t.calc!==undefined&&t.paid<t.calc});
     if(adj.length)rows.push(['Cobros por debajo de lo calculado ('+adj.length+')','-'+money(adj.reduce(function(a,t){return a+(t.calc-(t.paid||0))},0))]);
+    var fr=ex.filter(function(t){return t.free});
+    if(fr.length){
+      rows.push(['Salidas sin cobro ('+fr.length+')','',1]);
+      fr.forEach(function(t){rows.push([t.id+' · '+(t.plate||'sin placa')+' · '+(t.fw||'sin motivo'),(t.con||'Sin cajero')+' · '+money(t.fc||0)])});
+      rows.push(['Dejado de cobrar',money(fr.reduce(function(a,t){return a+(t.fc||0)},0))]);
+    }
     var dd=ex.filter(function(t){return t.plan==='dia'});
     if(dd.length)rows.push(['Boletos todo el día ('+dd.length+')',money(sumPaid(dd))]);
     var pp=pensPend();
@@ -1956,12 +1980,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function addDetail(rec,ex,pin){
     var m={};ex.concat(pin).forEach(function(t){m[t.id]=t});
     rec.ext=true;
-    rec.detail=Object.keys(m).map(function(k){var t=m[k];return {id:t.id,p:t.plate||'',ty:NAMES[t.type||'auto']||(t.type||'auto'),pl:t.plan==='dia'?1:0,i:t.in,o:t.out||0,m:t.paid||0,c:(t.calc!==undefined?t.calc:undefined),f:t.photo?1:0,ci:t.cn||'',co:t.con||'',pn:t.pn||''}}).sort(function(a,b){return a.i-b.i});
+    rec.detail=Object.keys(m).map(function(k){var t=m[k];return {id:t.id,p:t.plate||'',ty:NAMES[t.type||'auto']||(t.type||'auto'),pl:t.plan==='dia'?1:0,i:t.in,o:t.out||0,m:t.paid||0,fr:t.free?1:0,fw:t.fw||'',c:(t.calc!==undefined?t.calc:undefined),f:t.photo?1:0,ci:t.cn||'',co:t.con||'',pn:t.pn||''}}).sort(function(a,b){return a.i-b.i});
   }
   function cutTitle(c){if(c.title)return c.title;return 'Corte del día ('+(c.partial?'parcial':'total')+(c.ext?' extendido':'')+')'}
   function detLines(c){
     return (c.detail||[]).map(function(v){
-      return {head:v.id+'  '+(v.p||'sin placa'),sub:v.ty+(v.pl?' (todo el día)':'')+(v.pn?' - PENSIÓN: '+v.pn:'')+(v.f?' - CON FOTO':''),ent:'Entrada: '+fmt(v.i)+(v.ci?' ('+v.ci+')':''),sal:'Salida: '+(v.o?fmt(v.o):'sigue dentro')+(v.co?' ('+v.co+')':''),cob:money(v.m||0)+(v.c!==undefined&&v.c!==v.m?' (calculado '+money(v.c)+')':''),f:v.f};
+      return {head:v.id+'  '+(v.p||'sin placa'),sub:v.ty+(v.pl?' (todo el día)':'')+(v.pn?' - PENSIÓN: '+v.pn:'')+(v.f?' - CON FOTO':''),ent:'Entrada: '+fmt(v.i)+(v.ci?' ('+v.ci+')':''),sal:'Salida: '+(v.o?fmt(v.o):'sigue dentro')+(v.co?' ('+v.co+')':''),cob:(v.fr?'Sin cobro ('+(v.fw||'sin motivo')+') ':'')+money(v.m||0)+(v.c!==undefined&&v.c!==v.m?' (calculado '+money(v.c)+')':''),f:v.f};
     });
   }
   function fotoLine(c){var f=(c.detail||[]).filter(function(v){return v.f});return f.length?'Ingresaron con foto ('+f.length+'): boletos '+f.map(function(v){return v.id}).join(', '):''}
@@ -2258,7 +2282,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     $('cutSince').textContent=times.length?'Periodo abierto desde el '+fmt(Math.min.apply(null,times)):'No hay movimientos pendientes de corte.';
     box.innerHTML='';
     cutRows(ex,pin).forEach(function(x){box.appendChild(x[2]?headRow(x[0]):statRow(x[0],x[1]))});
-    $('cutInside').textContent=all.filter(function(t){return !t.out}).length+' vehículos siguen dentro y no entran en este corte.';
+    var nIn=all.filter(function(t){return !t.out}).length;$('cutInside').textContent=nIn+' vehículos siguen dentro y no entran en este corte.';$('freeBtn').classList.toggle('hidden',!nIn);$('freeBtn').textContent='Salida sin cobro de vehículos dentro ('+nIn+')';
     btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length||opsHas());$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
     renderHist();
   }
@@ -2473,7 +2497,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   })();
   $('dlgNoteOk').onclick=function(){$('dlgNote').classList.add('hidden')};
   // ===== Botón atrás del teléfono: cierra lo que esté abierto, vuelve a Entrada y, ahí, pide repetir para salir =====
-  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose',dlgPRec:'prcClose'},backT=0;
+  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose',dlgFree:'freeNo',dlgPRec:'prcClose'},backT=0;
   function goBack(){
     var open=[].slice.call(document.querySelectorAll('.dlg')).filter(function(d){return !d.classList.contains('hidden')});
     if(open.length){var d=open[open.length-1],b=$(DLG_CLOSE[d.id]);if(b)b.click();else d.classList.add('hidden');return}
@@ -2535,6 +2559,44 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }else{var salt=newSalt();cfg.cajeros.push({id:'c'+Date.now().toString(36),name:nm,s:salt,h:pwHash(salt,pin)})}
     saveCfg();cajForm(false);m.className='msg ok';m.textContent='Guardado.';cajUI();cajGate();
   })};
+
+  // ===== Salida sin cobro (antes del corte): pide el NIP del cajero; queda en el corte =====
+  var freeFails=0,freeLock=0;
+  function freeAuthCaj(){return cajList().length>0}
+  $('freeBtn').onclick=function(){
+    var m=$('cutMsg'),inside=load().filter(function(t){return !t.out}).sort(function(a,b){return a.in-b.in});
+    if(!inside.length)return;
+    if(!freeAuthCaj()&&!hasPwd()){m.className='msg bad';m.textContent='Para dar salida sin cobro primero da de alta cajeros (Ajustes › Cajeros) o crea la clave de administrador (Ajustes › Seguridad).';return}
+    var box=$('freeList'),now=Date.now();box.innerHTML='';
+    inside.forEach(function(t){
+      var lb=mkEl('label','chk'),cb=mkEl('input');cb.type='checkbox';cb.value=t.id;cb.className='freeCb';
+      lb.appendChild(cb);lb.appendChild(document.createTextNode(t.id+' · '+(t.plate||'sin placa')+' · entró '+fmt(t.in)+' · debe '+money(fareNow(t,now))));box.appendChild(lb);
+    });
+    $('freeAll').checked=false;$('freeWhy').value='';$('freePin').value='';$('freeErr').textContent='';
+    var cj=freeAuthCaj(),sel=$('freeCaj');$('freeCajWrap').classList.toggle('hidden',!cj);
+    $('freePinLbl').textContent=cj?'NIP del cajero':'Clave de administrador';$('freePin').inputMode=cj?'numeric':'text';$('freePin').maxLength=cj?4:8;
+    sel.innerHTML='';cajList().forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o)});
+    if(cajActive)sel.value=cajActive.id;
+    $('dlgFree').classList.remove('hidden');
+  };
+  $('freeAll').addEventListener('change',function(){var v=this.checked;document.querySelectorAll('#freeList .freeCb').forEach(function(c){c.checked=v})});
+  $('freeNo').onclick=function(){$('dlgFree').classList.add('hidden')};
+  $('freeOk').onclick=function(){
+    var err=$('freeErr'),ids=[].slice.call(document.querySelectorAll('#freeList .freeCb:checked')).map(function(c){return c.value}),why=$('freeWhy').value.trim(),pin=$('freePin').value;
+    if(!ids.length){err.textContent='Marca al menos un vehículo.';return}
+    if(why.length<3){err.textContent='Escribe el motivo.';return}
+    if(Date.now()<freeLock){err.textContent='Demasiados intentos. Espera unos segundos.';return}
+    var who='',wid='';
+    if(freeAuthCaj()){var c=cajList().filter(function(x){return x.id===$('freeCaj').value})[0];if(c&&pwHash(c.s,pin)===c.h){who=c.name;wid=c.id}}
+    else if(pwdOk(pin))who='Administrador';
+    if(!who){freeFails++;if(freeFails>=5){freeFails=0;freeLock=Date.now()+30000;err.textContent='Demasiados intentos. Espera 30 segundos.'}else err.textContent=freeAuthCaj()?'NIP incorrecto.':'Clave incorrecta.';$('freePin').value='';return}
+    freeFails=0;
+    var now=Date.now(),list=load(),n=0,lost=0;
+    list.forEach(function(t){if(ids.indexOf(t.id)>-1&&!t.out){var f=fareNow(t,now);t.out=now;t.paid=0;t.free=1;t.fw=why;t.fc=f;t.con=who;if(wid)t.co=wid;n++;lost+=f;photoDel(t.id)}});
+    save(list);list.forEach(function(t){if(t.free&&t.out===now)statsExit(t)});
+    $('dlgFree').classList.add('hidden');refresh();renderCut();
+    var m=$('cutMsg');m.className='msg ok';m.textContent=n+(n===1?' vehículo salió':' vehículos salieron')+' sin cobro ('+why+'). Se dejó de cobrar '+money(lost)+'. Quedará en el corte.';
+  };
 
   // ===== Apertura de operaciones: sin abrir no se registran entradas; el corte total las cierra =====
   function opsReq(){return cfg.opsOn!==false}
@@ -3460,6 +3522,16 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   };
 
   var current=null;
+  // Tarifa de un boleto: por hora (cada hora iniciada) o todo el día (bloques de 12 h), con el precio que había al entrar
+  function baseFare(t,now){
+    var ty=typeOf(t.type||"auto"),rate=t.rh!==undefined?t.rh:(ty.rate||0),tol=parseFloat($("tol").value)||0;
+    var mins=Math.max(1,Math.round((now-t.in)/60000)),dayP=t.rd!==undefined?t.rd:(ty.day||0),total;
+    if(t.plan==="dia")total=Math.max(1,Math.ceil(mins/720))*dayP;
+    else if(mins<=tol)total=0;
+    else total=Math.ceil(mins/60)*rate;
+    return {total:total,mins:mins};
+  }
+  function fareNow(t,now){var f=baseFare(t,now).total;if(t.pen){var pp=pensGet(t.pen);if(pp&&now<=pp.until)f=0}return f}
   function parseCode(s){
     s=s.trim().toUpperCase();
     return s.indexOf("PARK|")===0?s.split("|")[1]:s;
@@ -3472,13 +3544,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var t=load().filter(function(x){return x.id===id})[0];
     if(!t){msg.textContent="No encontramos ese boleto. Revisa el código.";msg.classList.add("bad");return}
     if(t.out){msg.textContent="Este boleto ya fue cobrado el "+fmt(t.out)+".";msg.classList.add("bad");return}
-    var ty=typeOf(t.type||"auto"),rate=t.rh!==undefined?t.rh:(ty.rate||0),tol=parseFloat($("tol").value)||0;
-    var mins=Math.max(1,Math.round((Date.now()-t.in)/60000));
-    var dayP=t.rd!==undefined?t.rd:(ty.day||0),total;
-    // Todo el día: cubre 12 horas; si se pasa, se cobra otro bloque de 12 horas
-    if(t.plan==="dia")total=Math.max(1,Math.ceil(mins/720))*dayP;
-    else if(mins<=tol)total=0;
-    else total=Math.ceil(mins/60)*rate;
+    var bf=baseFare(t,Date.now()),mins=bf.mins,total=bf.total;
     var penNote="",penBad2=false;
     if(t.pen){var pp=pensGet(t.pen);if(pp&&Date.now()<=pp.until){total=0;penNote="Pensionado: "+pp.name+". "+pensState(pp).t+". Sin cobro."}else if(pp){penNote="La pensión de "+pp.name+" venció el "+fdate(pp.until)+". Se cobra la tarifa normal.";penBad2=true}}
     var isLost=false;if(lostMode&&!(t.pen&&penNote.indexOf("Sin cobro")>-1)){total=parseFloat(cfg.lostFee)||0;penNote="Boleto extraviado: tarifa fija de $"+total.toFixed(2)+".";penBad2=false;isLost=true}lostMode=false;
