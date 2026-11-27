@@ -313,6 +313,7 @@ body.scanning .moreMenu{display:none}
 #statsBody h3{margin:20px 0 6px;font-size:calc(18px*var(--ui,1))}
 .stGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stBox{border:2px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}.stBox b{display:block;font-size:calc(26px*var(--ui,1));line-height:1.15}.stBox span{font-size:calc(13px*var(--ui,1));color:var(--muted)}
 .stRow{display:grid;grid-template-columns:72px 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:calc(14px*var(--ui,1))}.stRow>span:last-child{font-weight:700;text-align:right}
+body.opsClosed #entrada .types{display:none}
 .bkWarn{border:2px solid var(--accent);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:calc(15px*var(--ui,1));line-height:1.3}.bkWarn.hidden{display:none}.bkBtns{display:flex;gap:8px;margin-top:8px}.bkBtns .mini{flex:1;min-height:44px}
 .bkRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:calc(15px*var(--ui,1))}.bkRow small{display:block;color:var(--muted)}.bkRow .mini{min-height:44px;padding:0 12px}
 .chCols{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:2px solid var(--line);padding-top:6px;margin-top:6px}
@@ -403,6 +404,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   <div id="homeBar" class="homeBar hidden"><button id="homeBtn" class="setBack" type="button" aria-label="Ir al menú principal"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M12 3 2 12h3v8h5v-6h4v6h5v-8h3L12 3z"/></svg><span>Inicio</span></button></div>
   <section id="entrada" class="panel" role="tabpanel">
     <div id="bkWarn" class="bkWarn hidden" role="status"><span id="bkWarnTxt"></span><div class="bkBtns"><button class="mini" id="bkWarnGo" type="button">Respaldar ahora</button><button class="mini ghost" id="bkWarnLater" type="button">Más tarde</button></div></div>
+    <div id="opsBar" class="bkWarn hidden" role="status"><b>Operaciones cerradas.</b> <span>Abre las operaciones para registrar entradas. Las salidas de los vehículos que siguen dentro sí se pueden cobrar.</span><div class="bkBtns"><button class="mini" id="opsOpenBtn" type="button">Abrir operaciones</button></div></div>
+    <p id="opsInfo" class="hint hidden"></p>
     <div id="regLegend" class="regLegend hidden" role="status"></div>
     <div class="types" id="vtypes" role="radiogroup" aria-label="Tipo de vehículo"></div>
     <div class="types">
@@ -1083,6 +1086,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function doGen(photo){
     show("entrada");
     if(licBlocked()){var lm=$(inOpenFlag?"inMsg":"entMsg");lm.className="msg bad";lm.textContent="Licencia vencida: no se pueden generar boletos nuevos. Activa una clave en Ajustes › Licencia.";return}
+    if(!opsIsOpen()){var om=$(inOpenFlag?"inMsg":"entMsg");om.className="msg bad";om.textContent="Operaciones cerradas: toca Abrir operaciones para registrar entradas.";inClose();opsUI();return}
     var typed=$("plate").value.trim().toUpperCase(),auto=cfg.mode==="auto"||($("withPhoto").checked&&!typed),plate=auto?"":typed,msg=$(inOpenFlag?"inMsg":"entMsg");
     msg.className="msg";
     if(!plate&&!auto){msg.textContent="Escribe la placa para generar el boleto.";msg.classList.add("bad");return}
@@ -2163,7 +2167,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('cutPrint').onclick=function(){if(lastCut)printReport(lastCut)};
   $('cutPartial').onclick=function(){
     var all=load(),ex=pending(all),pin=pendingIn(all);
-    var rec=makeCut(all,ex,pin,Date.now(),true);if($('cutExt').checked)addDetail(rec,ex,pin);
+    var rec=makeCut(all,ex,pin,Date.now(),true);rec.rows=opsRows(rec.at,false).concat(rec.rows);if($('cutExt').checked)addDetail(rec,ex,pin);
     var cuts=loadCuts();cuts.push(rec);saveCuts(cuts);
     renderCut();
     var m=$('cutMsg');m.className='msg ok';m.textContent='Corte parcial generado. No cierra el periodo: todo entra en el corte total.';
@@ -2189,7 +2193,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     box.innerHTML='';
     cutRows(ex,pin).forEach(function(x){box.appendChild(x[2]?headRow(x[0]):statRow(x[0],x[1]))});
     $('cutInside').textContent=all.filter(function(t){return !t.out}).length+' vehículos siguen dentro y no entran en este corte.';
-    btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length);$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
+    btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length||opsIsOpen());$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
     renderHist();
   }
   // Historial de cortes: se pueden seleccionar y borrar
@@ -2465,6 +2469,27 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }else{var salt=newSalt();cfg.cajeros.push({id:'c'+Date.now().toString(36),name:nm,s:salt,h:pwHash(salt,pin)})}
     saveCfg();cajForm(false);m.className='msg ok';m.textContent='Guardado.';cajUI();cajGate();
   })};
+
+  // ===== Apertura de operaciones: sin abrir no se registran entradas; el corte total las cierra =====
+  function opsIsOpen(){return !!(cfg.ops&&cfg.ops.at)}
+  function opsUI(){
+    var open=opsIsOpen();
+    $('opsBar').classList.toggle('hidden',open);document.body.classList.toggle('opsClosed',!open);
+    var i=$('opsInfo');i.classList.toggle('hidden',!open);
+    i.textContent=open?'Operaciones abiertas desde el '+fmt(cfg.ops.at)+(cfg.ops.cn?' por '+cfg.ops.cn:'')+'.':'';
+  }
+  $('opsOpenBtn').onclick=function(){
+    if(opsIsOpen()){opsUI();return}
+    if(cajList().length&&!cajActive){cajGate();return}
+    cfg.ops={at:Date.now(),cn:cajActive?cajActive.name:''};saveCfg();opsUI();
+    var m=$('entMsg');m.className='msg ok';m.textContent='Operaciones abiertas a las '+new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+(/\.$/.test(new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}))?'':'.');
+  };
+  function opsRows(now,closing){
+    if(!opsIsOpen())return [];
+    var r=[['Operaciones','',1],['Apertura',fmt(cfg.ops.at)+(cfg.ops.cn?' ('+cfg.ops.cn+')':'')]];
+    if(closing)r.push(['Cierre',fmt(now)+(cajActive?' ('+cajActive.name+')':'')]);
+    return r;
+  }
 
   // ===== Pensiones mensuales (están en Ajustes, no en el menú principal) =====
   var PK='park:pens',pensMem=[],pnEdit='';
@@ -2974,13 +2999,13 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var btn=this;
     if(!dlgOk){var all0=load(),in0=all0.filter(function(t){return !t.out}).length;$('dlgWarn').textContent='Se borrarán los registros de los '+(all0.length-in0)+' vehículos que ya salieron.'+(in0?' Los '+in0+' que siguen dentro se conservan y se cobran normalmente al salir.':'');$('dlg').classList.remove('hidden');$('dlgNo').focus();return}dlgOk=false;
     var all=load(),ex=pending(all),now=Date.now(),total=sumPaid(ex)+pensSum();
-    var pin=pendingIn(all);if(!ex.length&&!pin.length&&!pensPend().length&&!bathPend().length)return;
+    var pin=pendingIn(all);if(!ex.length&&!pin.length&&!pensPend().length&&!bathPend().length&&!opsIsOpen())return;
     try{bkSnap('antes')}catch(e){}
-    var rec=makeCut(all,ex,pin,now,false);rec.cleared=all.filter(function(t){return t.out}).length;if($('cutExt').checked)addDetail(rec,ex,pin);
+    var rec=makeCut(all,ex,pin,now,false);rec.rows=opsRows(now,true).concat(rec.rows);if(cfg.ops){rec.opAt=cfg.ops.at;rec.opBy=cfg.ops.cn||''}cfg.ops=null;saveCfg();opsUI();rec.cleared=all.filter(function(t){return t.out}).length;if($('cutExt').checked)addDetail(rec,ex,pin);
     var cuts=loadCuts();cuts.push(rec);saveCuts(cuts);
     var keep=all.filter(function(t){return !t.out});keep.forEach(function(t){t.cutIn=now;(t.cuts=t.cuts||[]).push(now)});save(keep);pensMarkCut(now);refresh();
     renderCut();
-    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'. Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
+    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'. Operaciones cerradas. Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
     lastCut=rec;$('cutPrint').classList.remove('hidden');showCutPdf(rec);
   };
 
@@ -3346,6 +3371,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var m=$("salMsg");m.className="msg ok";m.textContent="Cobro de $"+current.total.toFixed(2)+" registrado. Salida libre.";
     current=null;
   };
+  opsUI();
   refresh();
   cajGate();
 })();
