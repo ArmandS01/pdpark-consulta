@@ -1300,7 +1300,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('cfgNameX').value=cfg.nameExit||100;$('nameXVal').textContent=(cfg.nameExit||100)+' %';
   $('cfgNameX').addEventListener('input',function(){cfg.nameExit=parseInt(this.value,10);$('nameXVal').textContent=cfg.nameExit+' %';saveCfg();applyCfg()});
   $('cfgCap').addEventListener('input',function(){var v=parseInt(this.value,10);if(v>0){cfg.capacity=v;saveCfg();refresh()}});
-  $('cfgAutoPrint').addEventListener('change',function(){cfg.autoPrint=this.checked;saveCfg()});
+  $('cfgAutoPrint').addEventListener('change',function(){var el=this,want=el.checked;function go(){el.checked=want;cfg.autoPrint=want;saveCfg()}if(want)go();else{el.checked=true;admAsk(go)}});
   $('cfgScanX').addEventListener('change',function(){cfg.scanExit=this.checked;saveCfg()});
   $('cfgAskX').addEventListener('change',function(){var el=this,want=el.checked;el.checked=!want;admAsk(function(){el.checked=want;cfg.askExit=want;saveCfg()})});
   $('cfgLogoPct').value=cfg.logoPct||100;$('cfgLogoRange').value=Math.min(200,cfg.logoPct||100);
@@ -1656,7 +1656,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('cfgDrawer').addEventListener('change',function(){cfg.drawer=this.checked;saveCfg()});
   $('cfgDrawerAsk').addEventListener('change',function(){cfg.drawerAsk=this.checked;saveCfg()});
   $('cfgDrawerPin').addEventListener('change',function(){cfg.drawerPin=this.value==='1'?1:0;saveCfg()});
-  $('drawerTest').onclick=function(){drawerOpen(true)};
+  $('drawerTest').onclick=function(){admAsk(function(){drawerOpen(true)})};
   // Espacio en blanco al final de cada impresión (mm)
   [['cfgPadEntry','padEntry'],['cfgPadExit','padExit'],['cfgPadCut','padCut']].forEach(function(x){
     var el=$(x[0]);el.value=cfg[x[1]]||'';
@@ -2285,7 +2285,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(admUnlocked()){if(cb)cb();return}
     admCb=cb||null;$('dlgAdmErr').textContent='';$('dlgAdmPwd').value='';
     $('dlgAdmForgot').classList.toggle('hidden',!hasQ());
-    $('dlgAdm').classList.remove('hidden');$('dlgAdmPwd').focus();
+    document.body.appendChild($('dlgAdm'));document.body.appendChild($('dlgRec'));$('dlgAdm').classList.remove('hidden');$('dlgAdmPwd').focus();
   }
   $('dlgAdmOk').onclick=function(){
     var err=$('dlgAdmErr');
@@ -2567,7 +2567,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     });
   }
   $('pnFind').addEventListener('input',pensUI);
-  $('pnNew').onclick=function(){pnEdit='';pensForm(true)};
+  $('pnNew').onclick=function(){admAsk(function(){pnEdit='';pensForm(true)})};
   $('pnCancel').onclick=function(){pnEdit='';pensForm(false)};
   $('pnSave').onclick=function(){
     var m=$('pnMsg');m.className='msg bad';
@@ -2598,6 +2598,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('pnPayNo').onclick=function(){$('dlgPen').classList.add('hidden')};
   $('pnPayOk').onclick=function(){
     var amt=parseFloat($('pnPayAmt').value);if(!(amt>0)){$('pnPayInfo').textContent='Escribe el monto a cobrar.';return}
+    var pp0=pensGet(pnPayId),btn=this;
+    if(pp0&&amt<(pp0.rate||0)-0.004&&!btn.dataset.ok){
+      if(!admUnlocked())$('pnPayInfo').textContent='Cobrar menos de la mensualidad ('+money(pp0.rate)+') requiere la clave de administrador.';
+      admAsk(function(){btn.dataset.ok='1';btn.click()});return;
+    }
+    delete btn.dataset.ok;
     var all=pensLoad(),now=Date.now(),nu=0,nm='';
     all.forEach(function(p){if(p.id===pnPayId){nu=pensPayNext(p);p.until=nu;nm=p.name;(p.pays=p.pays||[]).push({at:now,amt:amt,until:nu,cn:cajActive?cajActive.name:'',cut:0})}});
     pensSave(all);$('dlgPen').classList.add('hidden');if(typeof drawerOpen==='function')drawerOpen();
@@ -2844,7 +2850,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     });
     return {format:'PD-PARK-LOCAL-BACKUP',version:1,createdAt:new Date().toISOString(),data:data,notes:{photos:false,license:false,cloudCredentials:false,adminPassword:false}};
   }
-  $('localBackupExport').onclick=function(){
+  $('localBackupExport').onclick=function(){admAsk(localBackupDoExport)};
+  function localBackupDoExport(){
     try{
       var pack=localBackupPack(),txt=JSON.stringify(pack,null,2),dd=new Date(),pad2=function(n){return (n<10?'0':'')+n},
           name='PD-Park-respaldo-'+dd.getFullYear()+'-'+pad2(dd.getMonth()+1)+'-'+pad2(dd.getDate())+'.json',P=window.Capacitor&&window.Capacitor.Plugins;
@@ -2862,7 +2869,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1500);
       bkExt();localBackupSay('Respaldo creado: '+name+'. Comprueba que el archivo aparezca en Descargas o en Archivos.');
     }catch(e){localBackupSay('No se pudo crear el respaldo: '+(e&&e.message?e.message:'error de almacenamiento'),true)}
-  };
+  }
   function bkValidate(txt){
     var p=JSON.parse(String(txt||''));
     if(!p||p.format!=='PD-PARK-LOCAL-BACKUP'||p.version!==1||!p.data||typeof p.data!=='object'||Array.isArray(p.data))throw new Error('El archivo no es un respaldo válido de PD Park.');
@@ -2887,6 +2894,10 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   });
   $('localBackupImport').onclick=function(){
     if(!localBackupFileData)return;
+    admAsk(localBackupDoImport);
+  };
+  function localBackupDoImport(){
+    if(!localBackupFileData)return;
     if(!confirm('¿Restaurar este respaldo? Los boletos, cortes, pensiones, cobros de baño y ajustes actuales serán reemplazados. Antes se intentará guardar una copia de seguridad de los datos actuales.'))return;
     var d=localBackupFileData.data,old={};
     try{
@@ -2900,7 +2911,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       try{localBackupKeys.forEach(function(k){if(old[k]===null||old[k]===undefined)localStorage.removeItem(k);else localStorage.setItem(k,old[k])})}catch(rollbackError){}
       localBackupSay('No se pudo restaurar. Se intentó recuperar el estado anterior: '+(e&&e.message?e.message:'error'),true);
     }
-  };
+  }
   /* ===== Copias automáticas dentro del teléfono + aviso de respaldo externo ===== */
   var BKK='park:bk',bkSnapVer=-1,bkBusy=false,bkLater=false;
   function bkGet(){try{return JSON.parse(localStorage.getItem(BKK)||'{}')}catch(e){return {}}}
@@ -2937,7 +2948,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
         var nm=bkName(n),r=document.createElement('div');r.className='bkRow';
         var t=document.createElement('div'),a=document.createElement('b'),sm=document.createElement('small');a.textContent=nm[0];sm.textContent=nm[1];t.appendChild(a);t.appendChild(sm);
         var bt=document.createElement('button');bt.type='button';bt.className='mini';bt.textContent='Restaurar';bt.onclick=function(){bkRestore(n)};
-        var sh=document.createElement('button');sh.type='button';sh.className='mini ghost';sh.textContent='Compartir';sh.onclick=function(){bkShare(n)};
+        var sh=document.createElement('button');sh.type='button';sh.className='mini ghost';sh.textContent='Compartir';sh.onclick=function(){admAsk(function(){bkShare(n)})};
         r.appendChild(t);r.appendChild(sh);r.appendChild(bt);box.appendChild(r);
       });
     });
@@ -2953,7 +2964,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var P=window.Capacitor&&window.Capacitor.Plugins;if(!P||!P.Filesystem||!P.Share)return;
     P.Filesystem.getUri({path:'auto/'+n,directory:'DATA'}).then(function(u){return P.Share.share({title:n,url:u.uri,dialogTitle:'Guardar la copia de PD Park'}).then(function(){bkExt()},function(){bkExt()})}).catch(function(e){localBackupSay('No se pudo compartir: '+((e&&e.message)||'error'),true)});
   }
-  $('bkAuto').addEventListener('change',function(){var b=bkGet();b.on=this.checked;bkSet(b);bkUI();if(this.checked)bkSnap('auto')});
+  $('bkAuto').addEventListener('change',function(){var el=this,want=el.checked;function go(){el.checked=want;var b=bkGet();b.on=want;bkSet(b);bkUI();if(want)bkSnap('auto')}if(want)go();else{el.checked=true;admAsk(go)}});
   // Aviso en Entrada si hace más de 3 días que no hay un respaldo fuera del teléfono
   function bkWarnSync(){
     var w=$('bkWarn');if(!w)return;var b=bkGet(),c=cloudGet(),last=Math.max(b.ext||0,b.first||0,(c.on&&c.rt&&c.last)?c.last:0),days=Math.floor((Date.now()-last)/86400000),has=false;
