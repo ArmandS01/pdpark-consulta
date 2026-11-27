@@ -1906,6 +1906,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }
     var bp=bathPend();
     if(bp.length){var bpn=bp.reduce(function(a,x){return a+(x.n||0)},0);rows.push([(cfg.bathName||'Baño')+' ('+bpn+' usos)',money(bathSum())])}
+    // Boletos todo el día: quién los dio y a qué placa, para revisarlos (se dan a clientes frecuentes)
+    var bd=pin.filter(function(t){return t.plan==='dia'}).sort(function(a,b){return a.in-b.in});
+    if(bd.length){
+      rows.push(['Boletos todo el día entregados ('+bd.length+')','',1]);
+      bd.forEach(function(t){rows.push([t.id+' · '+(t.plate||'sin placa')+' · '+fmt(t.in),t.cn||'Sin cajero'])});
+    }
     var cn={};
     function cg(n){return cn[n]||(cn[n]={e:0,s:0,p:0,m:0})}
     pin.forEach(function(t){if(t.cn)cg(t.cn).e++});
