@@ -131,6 +131,7 @@ select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px
 .pnCard .pnSt{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;margin:0 0 8px}
 .pnSt-ok{background:rgba(27,196,127,.2);color:var(--g)}.pnSt-pron{background:rgba(242,183,5,.25);color:#b98900}.pnSt-venc,.pnSt-nopay{background:rgba(217,48,37,.18);color:#d93025}
 .pnCard .mini{margin:0 6px 6px 0}
+.pnCard .pnRow{display:flex;gap:8px;align-items:stretch;margin:0 0 10px}.pnCard .pnRow>*{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;text-align:center;margin:0;padding:6px 10px;min-height:40px;border-radius:999px;font:700 14px/1.2 system-ui,sans-serif}.pnCard .pnPay{border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer}
 /* Pantalla de foto del vehículo: marco verde y esquinas redondeadas */
 #dlgPhoto .box{border:3px solid var(--g);border-radius:24px}
 .phFrame{background:#000;border:3px solid var(--g);border-radius:18px;overflow:hidden}
@@ -147,6 +148,8 @@ body.scanning .tiles,body.scanning .tabs,body.scanning .panel{display:none}
 textarea{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:14px/1.3 ui-monospace,Consolas,monospace;resize:vertical}
 .licBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;background:rgba(242,183,5,.25);color:var(--ink);border:1.5px solid #f2b705}.licBar.hidden{display:none}.licBar.bad{background:rgba(217,48,37,.15);border-color:#d93025}.licBar .mini{flex:none;padding:6px 10px;min-height:0;font-size:13px}
 body.scanning .licBar{display:none}
+/* Linterna: icono de 60 px */
+body .camTorch{width:60px;height:60px;min-height:0;padding:0;border:0;border-radius:14px;background:none;overflow:hidden;-webkit-tap-highlight-color:transparent}body .camTorch img{width:100%;height:100%;display:block;pointer-events:none}body .camTorch[aria-pressed="true"]{background:none;box-shadow:0 0 0 4px var(--accent),0 0 22px 4px var(--accent)}
 /* Caja de escanear: el texto va dentro del marco */
 body .fld{display:flex;align-items:center;gap:8px;border:0;border-radius:0;padding:0;margin:10px 0}body .fld .fldBox{flex:1;min-width:0;border:3px solid var(--g);border-radius:13px;padding:1px 9px}
 body .fld label{position:static;display:block;padding:0;background:none;color:var(--g);font-size:13px;font-weight:600;margin:0}
@@ -317,6 +320,8 @@ body.opsClosed #entrada .types{display:none}
 body.noDay .trates>div:nth-child(2){display:none}
 .bkWarn{border:2px solid var(--accent);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:calc(15px*var(--ui,1));line-height:1.3}.bkWarn.hidden{display:none}.bkBtns{display:flex;gap:8px;margin-top:8px}.bkBtns .mini{flex:1;min-height:44px}
 .bkRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:calc(15px*var(--ui,1))}.bkRow small{display:block;color:var(--muted)}.bkRow .mini{min-height:44px;padding:0 12px}
+.prcQr{display:flex;justify-content:center;margin-top:4px}.prcQr img,.prcQr canvas{max-width:100%;height:auto}#prcView .ticket{margin-top:0}
+.bkRow{flex-wrap:wrap}.bkRow>div{flex:1 1 100%;min-width:0}.bkRow .mini{flex:1 1 0;margin-left:0;min-width:0}
 .chCols{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:2px solid var(--line);padding-top:6px;margin-top:6px}
 .chCol{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end}.chCol i{display:block;width:100%}.chCol i:first-child{border-radius:3px 3px 0 0}
 .chAx{display:flex;gap:3px;margin-top:4px;font-size:11px;color:var(--muted)}.chAx span{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:visible}
@@ -376,7 +381,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   </div>
     <div id="camBox" class="hidden"><video id="cam" muted playsinline></video><div class="camGuide" aria-hidden="true"></div></div>
   <button id="camBack" class="btn alt camBack" type="button">‹ Regresar a la pantalla principal</button>
-  <button id="camTorch" class="camTorch hidden" type="button" aria-pressed="false" aria-label="Linterna">&#128294; Linterna</button>
+  <button id="camTorch" class="camTorch hidden" type="button" aria-pressed="false" aria-label="Linterna"><img src="data:image/png;base64,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" alt="" aria-hidden="true" draggable="false"></button>
   <div class="tiles">
     <div class="occWrap" id="occWrap">
       <button class="tile" id="occBtn" type="button" aria-label="Ocupado y disponible. Toca para ver el registro de vehículos; mantén presionado para ver los detalles">
@@ -737,6 +742,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <div class="setPage hidden" id="set_nube">
       <div class="setHead"><button class="setBack" type="button" data-back="1" aria-label="Regresar a Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5m6-7-7 7 7 7"/></svg><span>Regresar a Ajustes</span></button><h2>Respaldo en la nube</h2></div>
       <p class="hint">Es opcional y viene desactivado. Si lo activas, se guarda una copia de boletos, cortes y ajustes en tu propia cuenta en la nube. No incluye las fotos ni la clave de administrador. Sin internet la app funciona igual y el respaldo se hace después.</p>
+      <div class="warnBox hidden" id="cloudNoKey">⚠ <b>Esta pantalla no está protegida.</b> Activa la clave de administrador en Ajustes › Seguridad para que solo tú puedas verla y cambiarla.</div>
       <label class="chk"><input type="checkbox" id="cloudOn">Activar respaldo en la nube</label>
       <div id="cloudBox" class="hidden">
         <label for="cloudUrl" style="margin-top:12px">Dirección del proyecto (URL)</label>
@@ -747,6 +753,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
         <input id="cloudMail" type="email" autocomplete="off" autocapitalize="off">
         <label for="cloudPass" style="margin-top:12px">Contraseña de la cuenta</label>
         <input id="cloudPass" type="password" autocomplete="off">
+        <label class="chk" style="margin-top:12px"><input type="checkbox" id="cloudRemember">Recordar la contraseña en este teléfono (se reconecta sola)</label>
+        <p class="hint">La contraseña solo abre la cuenta de esta app en tu proyecto. Se guarda dentro del teléfono y no se muestra.</p>
         <label for="cloudDev" style="margin-top:12px">Nombre de este teléfono</label>
         <input id="cloudDev" type="text" maxlength="30" autocomplete="off" placeholder="principal">
         <label class="chk" style="margin-top:14px"><input type="checkbox" id="liveOn">Enviar estadísticas en vivo a la página de consulta</label>
@@ -755,7 +763,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
         <p class="hint" id="cloudStatus"></p>
         <button class="btn alt" id="cloudNow" type="button">Respaldar ahora</button>
         <button class="btn alt" id="cloudRestore" type="button">Restaurar el último respaldo</button>
-        <button class="btn alt" id="cloudOff" type="button">Desconectar</button>
+        <button class="btn alt" id="cloudOff" type="button">Pausar el respaldo</button>
       </div>
       <div id="cloudMsg" class="msg" role="status"></div>
       <hr style="margin:22px 0;border:0;border-top:1px solid var(--line)">
@@ -826,6 +834,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
         <select id="pnType"></select>
         <label for="pnRate" style="margin-top:10px">Mensualidad ($)</label>
         <input id="pnRate" type="number" min="0" step="0.5" inputmode="decimal">
+        <div id="pnMonthsWrap"><label for="pnMonths" style="margin-top:10px">Meses a pagar ahora</label>
+        <select id="pnMonths"><option value="1">1 mes</option><option value="2">2 meses</option><option value="3">3 meses</option><option value="4">4 meses</option><option value="5">5 meses</option><option value="6">6 meses</option><option value="7">7 meses</option><option value="8">8 meses</option><option value="9">9 meses</option><option value="10">10 meses</option><option value="11">11 meses</option><option value="12">12 meses</option></select>
+        <p class="hint" id="pnMonthsInfo" style="margin-top:6px"></p></div>
         <label for="pnStart" style="margin-top:10px">Inicio</label>
         <input id="pnStart" type="date">
         <label for="pnNotes" style="margin-top:10px">Notas (opcional)</label>
@@ -976,7 +987,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   <div class="box">
     <h3 id="dlgPenT">Cobrar mensualidad</h3>
     <p id="pnPayWho"></p>
-    <label for="pnPayAmt">Monto ($)</label>
+    <label for="pnPayMonths">Meses a pagar</label>
+    <select id="pnPayMonths"><option value="1">1 mes</option><option value="2">2 meses</option><option value="3">3 meses</option><option value="4">4 meses</option><option value="5">5 meses</option><option value="6">6 meses</option><option value="7">7 meses</option><option value="8">8 meses</option><option value="9">9 meses</option><option value="10">10 meses</option><option value="11">11 meses</option><option value="12">12 meses</option></select>
+    <label for="pnPayAmt" style="margin-top:10px">Monto ($)</label>
     <input id="pnPayAmt" type="number" min="0" step="0.5" inputmode="decimal">
     <p class="hint" id="pnPayInfo"></p>
     <button class="btn" id="pnPayOk" type="button">Cobrar mensualidad</button>
@@ -1008,6 +1021,15 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <div id="pdfMsg" class="msg" role="status"></div>
     <button class="btn" id="pdfSaveBtn" type="button">Guardar en el dispositivo</button>
     <button class="btn alt" id="pdfClose" type="button">Cerrar</button>
+  </div>
+</div>
+<div id="dlgPRec" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgPRecT">
+  <div class="box">
+    <h3 id="dlgPRecT">Recibo de pensión</h3>
+    <select id="prcSel" class="hidden" aria-label="Elegir el pago"></select>
+    <div id="prcView" style="margin-top:10px"></div>
+    <button class="btn" id="prcPrint" type="button">Imprimir recibo</button>
+    <button class="btn alt" id="prcClose" type="button">Cerrar</button>
   </div>
 </div>
 <div id="printArea"></div>
@@ -1051,7 +1073,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   var curTab,curSet;
   function homeSync(){var b=$("homeBar");if(b)b.classList.add("hidden")}
-  function show(tab){curTab=tab;homeSync();
+  function show(tab){if(curSet==="nube"&&tab!=="tarifas"){try{admUntil=0}catch(e){}}curTab=tab;homeSync();
     var e=tab==="entrada";if(e)stopCam();$("tMore").setAttribute("aria-selected",tab==="corte"||tab==="tarifas"||tab==="pensiones");$("moreMenu").classList.add("hidden");$("tMore").setAttribute("aria-expanded","false");if(tab!=="salida")lostMode=false;
     ["entrada","salida","lista","tarifas","corte","pensiones"].forEach(function(n,i){$(n).classList.toggle("hidden",n!==tab);$("t"+(i+1)).setAttribute("aria-selected",n===tab)});if(tab==="lista")renderList();if(tab==="pensiones"){pensForm(false);pensUI()}if(tab==="corte"){$("cutMsg").textContent="";renderCut()}if(tab!=="salida")stopCam();if(tab!=="tarifas"){setHome();admUntil=0;admRefresh()}updPrChip();document.body.classList.toggle("noTiles",tab!=="entrada");document.body.classList.toggle("noScan",tab==="corte"||tab==="tarifas"||tab==="salida");window.scrollTo(0,0);
     
@@ -1061,7 +1083,10 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   var STEPS;
   function stepSync(){(STEPS||[]).forEach(function(f){f()})}
   // Menú de Ajustes: lista de categorías y una pantalla por categoría
-  function setPage(name,keep){curSet=name||"";homeSync();
+  function setPage(name,keep){
+    if(name==="nube"&&!admUnlocked()){admAsk(function(){setPage("nube",keep)});return}
+    if(curSet==="nube"&&name!=="nube"){try{admUntil=0;admRefresh()}catch(e){}}
+    curSet=name||"";homeSync();
     $("setMenu").classList.toggle("hidden",!!name);
     document.querySelectorAll(".setPage").forEach(function(d){d.classList.toggle("hidden",d.id!=="set_"+name)});
     lockSizes();admRefresh();if(name==="nube"){cloudUI();try{bkUI()}catch(e){}}if(name==="estadisticas")renderStats();if(name==="licencia")licUI();if(name==="cajeros")cajUI();if(name==="pens"){pensForm(false);pensUI()}
@@ -1907,7 +1932,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var pp=pensPend();
     if(pp.length){
       rows.push(['Pensiones mensuales','',1]);
-      pp.forEach(function(x){rows.push([x.p.name+(x.p.plate?' ('+String(x.p.plate).split(',')[0].trim()+')':''),money(x.y.amt||0)])});
+      pp.forEach(function(x){var pd=pensDays(x.y);rows.push([x.p.name+(x.p.plate?' ('+String(x.p.plate).split(',')[0].trim()+')':'')+' · '+pd.d+(pd.d===1?' día':' días')+' (del '+pd.a+' al '+pd.b+')',money(x.y.amt||0)])});
       rows.push(['Pensiones cobradas ('+pp.length+')',money(pensOnlySum())]);
     }
     var bp=bathPend();
@@ -1963,7 +1988,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function statsCalc(){
     var l=statsLoad(),bl=bathLoad(),now=Date.now(),days=[],k,inIds={};
     try{load().forEach(function(t){if(!t.out)inIds[t.id+'|'+t.in]=1})}catch(e){}
-    for(k=29;k>=0;k--)days.push({s:dayAt(k),e:dayAt(k-1),ent:0,sal:0,veh:0,bat:0,types:{},occ:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]});
+    for(k=29;k>=0;k--)days.push({s:dayAt(k),e:dayAt(k-1),ent:0,sal:0,veh:0,bat:0,pen:0,penN:0,types:{},occ:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]});
     function idx(ts){for(var j=days.length-1;j>=0;j--)if(ts>=days[j].s&&ts<days[j].e)return j;return -1}
     l.forEach(function(r){
       var a=idx(r.i),end=r.o||(inIds[r.k+'|'+r.i]?now:r.i);
@@ -1972,14 +1997,15 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       days.forEach(function(dd){if(r.i<dd.e&&end>dd.s){for(var h=0;h<24;h++){var hs=dd.s+h*3600000;if(r.i<hs+3600000&&end>hs)dd.occ[h]++}}});
     });
     bl.forEach(function(x){var b=idx(x.at);if(b>=0)days[b].bat+=x.amt||0});
+    try{pensLoad().forEach(function(p){(p.pays||[]).forEach(function(y){var b=idx(y.at);if(b>=0){days[b].pen+=y.amt||0;days[b].penN+=(y.m||1)}})})}catch(e){}
     return days;
   }
   function hourTxt(h){return (h%12||12)+(h<12?' am':' pm')}
 
   /* ===== Guardar estadísticas (PDF y Excel/CSV) ===== */
   function statsModel(per){
-    var days=statsCalc(),sel=days.slice(30-per),m={per:per,days:sel,week:days.slice(23),ent:0,sal:0,veh:0,bat:0,nAct:0,inside:0,hours:[],types:[]},h,tp={};
-    sel.forEach(function(d){m.ent+=d.ent;m.sal+=d.sal;m.veh+=d.veh;m.bat+=d.bat;if(d.ent||d.sal)m.nAct++;Object.keys(d.types).forEach(function(k){tp[k]=(tp[k]||0)+d.types[k]})});
+    var days=statsCalc(),sel=days.slice(30-per),m={per:per,days:sel,week:days.slice(23),ent:0,sal:0,veh:0,bat:0,pen:0,penN:0,nAct:0,inside:0,hours:[],types:[]},h,tp={};
+    sel.forEach(function(d){m.pen+=d.pen||0;m.penN+=d.penN||0;m.ent+=d.ent;m.sal+=d.sal;m.veh+=d.veh;m.bat+=d.bat;if(d.ent||d.sal)m.nAct++;Object.keys(d.types).forEach(function(k){tp[k]=(tp[k]||0)+d.types[k]})});
     try{m.inside=load().filter(function(t){return !t.out}).length}catch(e){}
     for(h=0;h<24;h++){var sum=0;sel.forEach(function(d){if(d.ent||d.sal)sum+=d.occ[h]});if(m.nAct&&sum>0)m.hours.push({h:h,v:sum/m.nAct})}
     m.types=Object.keys(tp).map(function(k){return {t:k,n:tp[k]}}).sort(function(a,b){return b.n-a.n});
@@ -2000,6 +2026,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     rows.push(['Tipos de vehículos más frecuentes','',true]);
     if(!m.types.length)rows.push(['Sin entradas en este periodo','']);
     m.types.forEach(function(x){rows.push([x.t,x.n+' ('+Math.round(x.n/tot*100)+'%)'])});
+    rows.push(['Pensiones mensuales (aparte)','',true],['Mensualidades cobradas',String(m.penN)],['Dinero de pensiones',money(m.pen)]);
     rows.push(['Comparación entre días (últimos 7)','',true]);
     m.week.slice().reverse().forEach(function(d,n){rows.push([n===0?'Hoy':(n===1?'Ayer':new Date(d.s).toLocaleDateString('es-MX',{weekday:'short',day:'numeric'})),money(d.veh+d.bat)+' · '+d.ent+' ent.'])});
     return {at:Date.now(),from:m.days[0].s,rows:rows,total:m.veh+m.bat,count:m.sal,partial:false,title:'Estadísticas: '+statsLabel(per),fname:'estadisticas-'+statsStamp()+'.pdf'};
@@ -2009,9 +2036,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var q=function(v){v=String(v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v},ln=function(a){return a.map(q).join(',')};
     var ds=function(ts){var t=new Date(ts);return t.getFullYear()+'-'+z(t.getMonth()+1)+'-'+z(t.getDate())};
     o.push(ln([(cfg.name||'PD Park')+' - Estadísticas',statsLabel(per)]),ln(['Generado',ds(now.getTime())+' '+z(now.getHours())+':'+z(now.getMinutes())]),'');
-    o.push('Resumen',ln(['Entradas',m.ent]),ln(['Salidas',m.sal]),ln(['Dentro ahora',m.inside]),ln(['Vehículos ($)',m.veh.toFixed(2)]),ln(['Baño ($)',m.bat.toFixed(2)]),ln(['Total ($)',(m.veh+m.bat).toFixed(2)]),'');
-    o.push('Por día',ln(['Fecha','Entradas','Salidas','Vehículos ($)','Baño ($)','Total ($)']));
-    (per<7?m.week:m.days).forEach(function(d){o.push(ln([ds(d.s),d.ent,d.sal,d.veh.toFixed(2),d.bat.toFixed(2),(d.veh+d.bat).toFixed(2)]))});
+    o.push('Resumen',ln(['Entradas',m.ent]),ln(['Salidas',m.sal]),ln(['Dentro ahora',m.inside]),ln(['Vehículos ($)',m.veh.toFixed(2)]),ln(['Baño ($)',m.bat.toFixed(2)]),ln(['Total ($)',(m.veh+m.bat).toFixed(2)]),'','Pensiones (aparte)',ln(['Mensualidades cobradas',m.penN]),ln(['Dinero de pensiones ($)',m.pen.toFixed(2)]),'');
+    o.push('Por día',ln(['Fecha','Entradas','Salidas','Vehículos ($)','Baño ($)','Total ($)','Pensiones ($)']));
+    (per<7?m.week:m.days).forEach(function(d){o.push(ln([ds(d.s),d.ent,d.sal,d.veh.toFixed(2),d.bat.toFixed(2),(d.veh+d.bat).toFixed(2),(d.pen||0).toFixed(2)]))});
     o.push('','Ocupación por hora',ln(['Hora','Vehículos (promedio)']));
     m.hours.forEach(function(x){o.push(ln([hourTxt(x.h),x.v.toFixed(1)]))});
     o.push('','Tipos de vehículo',ln(['Tipo','Entradas']));
@@ -2083,7 +2110,31 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       var ct=E('b','',String(tot));dn.appendChild(ct);box.appendChild(dn);
       legend(tk.map(function(k,j){return [k+' '+tp[k]+' ('+Math.round(tp[k]/tot*100)+'%)',CH_COL[j%CH_COL.length]]}));
     }
-    box.appendChild(E('p','stNote','Las estadísticas se cuentan desde que se instaló esta versión y se guardan 60 días. No incluye las mensualidades de pensiones.'));
+    box.appendChild(E('p','stNote','Las estadísticas se cuentan desde que se instaló esta versión y se guardan 60 días. Las mensualidades de pensiones van aparte, abajo.'));
+  }
+  /* ===== Estadísticas: apartado solo para pensiones (no se suma al dinero de vehículos y baño) ===== */
+  function statsPens(box,E,days,per,graph){
+    var sel=days.slice(30-per),n=0,a=0,from=sel[0].s,list=[],act=[],ok=0,ve=0;
+    sel.forEach(function(d){n+=d.penN||0;a+=d.pen||0});
+    try{act=pensLoad().filter(function(p){return p.on!==false});pensLoad().forEach(function(p){(p.pays||[]).forEach(function(y){if(y.at>=from)list.push({p:p,y:y})})})}catch(e){}
+    act.forEach(function(p){var k=pensState(p).k;if(k==='ok'||k==='pron')ok++;else ve++});
+    list.sort(function(x,z){return z.y.at-x.y.at});
+    box.appendChild(E('h3','','Pensiones mensuales '+(per===1?'hoy':'en '+per+' días')));
+    box.appendChild(E('div','stBig',money(a)));
+    var g=E('div','stGrid');[[n,'Cobradas'],[ok,'Vigentes'],[ve,'Vencidas o sin pago']].forEach(function(x){var d=E('div','stBox');d.appendChild(E('b','',String(x[0])));d.appendChild(E('span','',x[1]));g.appendChild(d)});box.appendChild(g);
+    if(graph){
+      var wk=days.slice(per>7?30-per:23),DL=['D','L','M','M','J','V','S'],mx=1,w=E('div','chCols'),ax=E('div','chAx');
+      wk.forEach(function(d){if((d.pen||0)>mx)mx=d.pen});
+      wk.forEach(function(d,k){var c=E('div','chCol'),dt=new Date(d.s),i=E('i');c.title=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric'})+': '+money(d.pen||0);
+        if(d.pen>0){i.style.height=(d.pen/mx*100)+'%';i.style.background='#c58bff'}else{i.style.height='2px';i.style.background='var(--line)'}
+        c.appendChild(i);w.appendChild(c);ax.appendChild(E('span','',per>7?((k%5===0||k===wk.length-1)?String(dt.getDate()):''):DL[dt.getDay()]))});
+      box.appendChild(E('p','stNote','Dinero de pensiones por día ('+(per>7?'últimos '+per+' días':'últimos 7 días')+').'));box.appendChild(w);box.appendChild(ax);
+    }else{
+      if(!list.length)box.appendChild(E('p','stNote','No se cobraron mensualidades en este periodo.'));
+      list.slice(0,30).forEach(function(x){box.appendChild(statRow(x.p.name+' · '+fdate(x.y.at),money(x.y.amt||0)))});
+      if(list.length>30)box.appendChild(E('p','stNote','Se muestran las 30 más recientes de '+list.length+'.'));
+    }
+    box.appendChild(E('p','stNote','Este apartado va aparte: no se suma al dinero de vehículos y baño.'));
   }
   function renderStats(){
     var box=$('statsBody'),days=statsCalc(),per=statsPer,sel=days.slice(30-per),i;
@@ -2105,7 +2156,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     b2.onclick=function(){statsFileSave('estadisticas-'+statsStamp()+'.csv','text/csv;charset=utf-8',statsCsv(statsPer),false)};
     sv.appendChild(b1);sv.appendChild(b2);box.appendChild(sv);
     var sm=E('div','msg');sm.id='statsMsg';sm.setAttribute('role','status');box.appendChild(sm);
-    if(statsView==='graf'){statsCharts(box,days,per,sel,E);return}
+    if(statsView==='graf'){statsCharts(box,days,per,sel,E);statsPens(box,E,days,per,true);return}
     var ent=0,sal=0,veh=0,bat=0,nAct=0;
     sel.forEach(function(d){ent+=d.ent;sal+=d.sal;veh+=d.veh;bat+=d.bat;if(d.ent||d.sal)nAct++});
     var inside=0;try{inside=load().filter(function(t){return !t.out}).length}catch(e){}
@@ -2121,7 +2172,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     box.appendChild(row('Vehículos',veh/mx*100,money(veh)));
     box.appendChild(row('Baño',bat/mx*100,money(bat)));
     if(per>1)box.appendChild(E('p','stNote','Promedio: '+money(nAct?(veh+bat)/nAct:0)+' por día con movimiento.'));
-    box.appendChild(E('p','stNote','No incluye las mensualidades de pensiones.'));
+    box.appendChild(E('p','stNote','Las mensualidades de pensiones van aparte, abajo.'));
     // 3. Horas de mayor ocupación
     box.appendChild(E('h3','','Horas de mayor ocupación'));
     var avg=[],h;
@@ -2154,6 +2205,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       box.appendChild(row(nm,(d.veh+d.bat)/mm*100,money(d.veh+d.bat)+' · '+d.ent+(d.ent===1?' ent.':' ent.'),d===best&&(best.veh+best.bat)>0));
     });
     if((best.veh+best.bat)>0)box.appendChild(E('p','stNote','Mejor día de la semana: '+new Date(best.s).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+' con '+money(best.veh+best.bat)+'.'));
+    statsPens(box,E,days,per,false);
     box.appendChild(E('p','stNote','Las estadísticas se cuentan desde que se instaló esta versión y se guardan 60 días. Los cortes anteriores no se incluyen.'));
   }
   function makeCut(all,ex,pin,now,partial){
@@ -2421,7 +2473,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   })();
   $('dlgNoteOk').onclick=function(){$('dlgNote').classList.add('hidden')};
   // ===== Botón atrás del teléfono: cierra lo que esté abierto, vuelve a Entrada y, ahí, pide repetir para salir =====
-  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose'},backT=0;
+  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose',dlgPRec:'prcClose'},backT=0;
   function goBack(){
     var open=[].slice.call(document.querySelectorAll('.dlg')).filter(function(d){return !d.classList.contains('hidden')});
     if(open.length){var d=open[open.length-1],b=$(DLG_CLOSE[d.id]);if(b)b.click();else d.classList.add('hidden');return}
@@ -2550,6 +2602,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var d=new Date(p?p.start:Date.now()),z=function(n){return ('0'+n).slice(-2)};
     $('pnStart').value=d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());$('pnStart').disabled=!!p;
     $('pnNotes').value=p?(p.notes||''):'';$('pnPayNowWrap').classList.add('hidden');$('pnPayNow').checked=true;
+    $('pnMonthsWrap').classList.toggle('hidden',!!p);$('pnMonths').value='1';pnMonthsInfo();
     $('pnSave').textContent=p?'Guardar cambios':'Guardar y cobrar pensión';
   }
   function pensUI(){
@@ -2563,13 +2616,15 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       var st=pensState(p),card=mkEl('div','pnCard');
       card.appendChild(mkEl('div','pnT1',p.name));
       card.appendChild(mkEl('div','pnT2',(p.plate||'sin placa')+' · '+(NAMES[p.type]||p.type)+' · '+money(p.rate||0)+' al mes'+(p.phone?' · Tel. '+p.phone:'')+(p.notes?' · '+p.notes:'')));
-      var chip=mkEl('span','pnSt pnSt-'+st.k,st.t);chip.setAttribute('role','button');chip.tabIndex=0;chip.style.cursor='pointer';card.appendChild(chip);card.appendChild(document.createElement('br'));
-      var b1=mkEl('button','mini hidden','Cobrar otra mensualidad'),b2=mkEl('button','mini ghost','Editar'),b3=mkEl('button','mini ghost','Dar de baja');b1.type=b2.type=b3.type='button';
+      var chip=mkEl('span','pnSt pnSt-'+st.k,st.t);
+      var b1=mkEl('button','pnPay','Cobrar mensualidad'),b2=mkEl('button','mini ghost','Editar'),b3=mkEl('button','mini ghost','Dar de baja');b1.type=b2.type=b3.type='button';
       b1.onclick=function(){pensPayOpen(p)};
-      var tg=function(){b1.classList.toggle('hidden')};chip.onclick=tg;chip.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}};
+      
       b2.onclick=function(){admAsk(function(){pnEdit=p.id;pensForm(true)})};
       b3.onclick=function(){var s3=pensState(p);if(s3.k==='ok'||s3.k==='pron'){$('pnMsg').className='msg bad';$('pnMsg').textContent='No se puede dar de baja a '+p.name+': la mensualidad está pagada ('+s3.t+'). Solo se puede dar de baja si no se ha pagado la mensualidad.';return}if(!hasPwd()){$('pnMsg').className='msg bad';$('pnMsg').textContent='Solo el administrador puede dar de baja una pensión. Primero crea la clave de administrador en Ajustes › Seguridad.';return}admAsk(function(){var all=pensLoad();all.forEach(function(x){if(x.id===p.id)x.on=false});pensSave(all);$('pnMsg').className='msg ok';$('pnMsg').textContent='Pensión dada de baja. Sus cobros siguen contando en el corte.';pensUI()})};
-      card.appendChild(b1);card.appendChild(b2);card.appendChild(b3);box.appendChild(card);
+      var rw=mkEl('div','pnRow');rw.appendChild(chip);rw.appendChild(b1);card.appendChild(rw);card.appendChild(b2);card.appendChild(b3);
+      if((p.pays||[]).length){var b5=mkEl('button','mini ghost','Ver recibo');b5.type='button';b5.onclick=function(){pensView(p)};card.appendChild(b5);var b4=mkEl('button','mini ghost','Reimprimir recibo');b4.type='button';b4.onclick=function(){var ps=p.pays[p.pays.length-1];pensReceipt(p,ps);$('pnMsg').className='msg ok';$('pnMsg').textContent='Recibo de '+p.name+' enviado a imprimir.'};card.appendChild(b4)}
+      box.appendChild(card);
     });
   }
   $('pnFind').addEventListener('input',pensUI);
@@ -2589,31 +2644,83 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }
     var parts=(sd||'').split('-'),st=parts.length===3?new Date(+parts[0],+parts[1]-1,+parts[2],0,0,0,0).getTime():Date.now(),now=Date.now();
     var p={id:'M'+now.toString(36),name:nm,phone:$('pnPhone').value.trim(),plate:pl,type:$('pnType').value,rate:rate,start:st,until:st-1,notes:$('pnNotes').value.trim(),on:true,pays:[]};
-    if($('pnPayNow').checked){p.until=addMonths(st,1);p.pays.push({at:now,amt:rate,until:p.until,cn:cajActive?cajActive.name:'',cut:0})}
-    all.push(p);pensSave(all);pensForm(false);m.className='msg ok';if($('pnPayNow').checked&&typeof drawerOpen==='function')drawerOpen();
-    m.textContent='Pensión guardada.'+($('pnPayNow').checked?' Primera mensualidad cobrada, vigente hasta '+fdate(p.until)+'.':' Falta cobrar la primera mensualidad.');
+    var nMo=Math.max(1,Math.min(12,parseInt($('pnMonths').value,10)||1));
+    if($('pnPayNow').checked){p.until=addMonths(st,nMo);p.pays.push({at:now,amt:rate*nMo,from:st-1,until:p.until,m:nMo,cn:cajActive?cajActive.name:'',cut:0})}
+    all.push(p);pensSave(all);pensForm(false);m.className='msg ok';if($('pnPayNow').checked&&typeof drawerOpen==='function')drawerOpen();if($('pnPayNow').checked&&p.pays.length)pensReceipt(p,p.pays[p.pays.length-1]);
+    m.textContent='Pensión guardada.'+($('pnPayNow').checked?(nMo>1?' Se cobraron '+nMo+' meses ('+money(rate*nMo)+'), vigente hasta ':' Primera mensualidad cobrada, vigente hasta ')+fdate(p.until)+'.':' Falta cobrar la primera mensualidad.');
     pensUI();
   };
   var pnPayId='';
   function pensPayOpen(p){
-    pnPayId=p.id;$('pnPayWho').textContent=p.name+' · '+(p.plate||'');$('pnPayAmt').value=p.rate||'';
+    pnPayId=p.id;$('pnPayWho').textContent=p.name+' · '+(p.plate||'')+' · '+money(p.rate||0)+' al mes';$('pnPayMonths').value='1';$('pnPayAmt').value=p.rate||'';
     pensPayInfo();$('dlgPen').classList.remove('hidden');
   }
-  function pensPayNext(p){var now=Date.now(),base=(p.until&&p.until>=now)?p.until:now;return addMonths(base,1)}
-  function pensPayInfo(){var p=pensGet(pnPayId);if(p)$('pnPayInfo').textContent='Nueva vigencia: hasta el '+fdate(pensPayNext(p))+'.'}
+  function pnMo(){return Math.max(1,Math.min(12,parseInt($('pnPayMonths').value,10)||1))}
+  $('pnPayMonths').addEventListener('change',function(){var p=pensGet(pnPayId);if(p)$('pnPayAmt').value=Math.round((p.rate||0)*pnMo()*100)/100;pensPayInfo()});
+  function pnMonthsInfo(){var r=parseFloat($('pnRate').value)||0,n=parseInt($('pnMonths').value,10)||1;$('pnMonthsInfo').textContent=r>0?'Se cobran '+money(r*n)+(n>1?' ('+n+' meses de '+money(r)+').':'.'):''}
+  $('pnMonths').addEventListener('change',pnMonthsInfo);$('pnRate').addEventListener('input',pnMonthsInfo);
+  // Recibo de pensión: se imprime al cobrar, con un QR que lleva la vigencia y el importe pagado
+  // El texto del QR va sin acentos ni símbolos especiales: así la librería de QR no falla y cualquier lector lo lee
+  function qrAsc(t){var x=String(t||'');try{x=x.normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){}return x.replace(/[^\x20-\x7E]/g,'').replace(/\|/g,'/').trim()}
+  function pensQrText(p,y){return ['PD PARK - PENSION',qrAsc(cfg.name||'Estacionamiento'),'Nombre: '+qrAsc(p.name),'Placa o ID: '+qrAsc(p.plate||'-'),'Pagado: '+money(y.amt||0)+((y.m||1)>1?' ('+y.m+' meses)':'')+' el '+qrAsc(fdate(y.at)),'Vigente hasta: '+qrAsc(fdate(y.until))].join(' | ')}
+  function pensRecBuild(p,y){
+    var qd=document.createElement('div'),s=Math.min(cfg.qrSize||180,qrCap());
+    try{new QRCode(qd,{text:pensQrText(p,y),width:s,height:s,correctLevel:QRCode.CorrectLevel.M})}catch(e){qd.innerHTML='';try{new QRCode(qd,{text:pensQrText(p,y),width:s,height:s,correctLevel:QRCode.CorrectLevel.L})}catch(e2){qd.innerHTML=''}}
+    var rows=[['Pensionado',p.name],['PLACA O ID:',p.plate||'-'],['Tipo',NAMES[p.type]||p.type||''],['Pagado el',fmt(y.at)]].concat((y.m||1)>1?[['Meses pagados',String(y.m)]]:[]).concat([['Días pagados',(function(){var pd=pensDays(y);return pd.d+' (del '+pd.a+' al '+pd.b+')'})()]]).concat([['Vigente hasta',fdate(y.until)]]);
+    if(y.cn)rows.push(['Cajero',y.cn]);
+    var c=mkEl('div','ticket exit');
+    c.appendChild(mkEl('p','brand',cfg.name||'Estacionamiento'));c.appendChild(mkEl('p','kind','Recibo de pensión mensual'));c.appendChild(mkEl('div','cut'));
+    rows.forEach(function(x){var r=mkEl('div','xrow');r.appendChild(mkEl('span',null,x[0]));r.appendChild(mkEl('b',null,x[1]));c.appendChild(r)});
+    var pd=mkEl('div','xpaid');pd.appendChild(mkEl('span',null,'Importe pagado'));pd.appendChild(mkEl('b',null,money(y.amt||0)));c.appendChild(pd);
+    qd.className='prcQr';c.appendChild(qd);
+    return {c:c,q:qd.querySelector('canvas'),rows:rows};
+  }
+  // Al cobrar: si hay impresora se imprime; si no (navegador o vista previa), el recibo se muestra en pantalla
+  function pensReceipt(p,y){if(prReady()&&!(NATIVE&&!cfg.printer))pensPrintNow(p,y,true);else pensView(p,y)}
+  function pensPrintNow(p,y,auto){
+    try{
+      var R=pensRecBuild(p,y),sc=(cfg.fontExit||100)/100,S=function(n){return Math.round(n*sc)},ns=(cfg.nameExit||100)/100;
+      if(prReady()){
+        var ops=[{k:'text',s:cfg.name||'Estacionamiento',size:Math.round(S(30)*ns),bold:1,align:'c'},{k:'text',s:'Recibo de pensión mensual',size:S(20),align:'c'},{k:'line'}];
+        R.rows.forEach(function(x){ops.push({k:'row',size:S(24),l:x[0],r:x[1]})});
+        ops.push({k:'line'},{k:'text',s:'Importe pagado',size:S(20),align:'c'},{k:'text',s:money(y.amt||0),size:S(56),bold:1,align:'c'});
+        if(R.q)ops.push({k:'qr',src:R.q});
+        prPrint({ops:ops,tail:cfg.padExit||0,auto:!!auto});return;
+      }
+      var pa=$('printArea');pa.innerHTML='';pa.appendChild(R.c);window.print();
+    }catch(e){}
+  }
+  // Ver recibo: muestra en pantalla el recibo de un pago de pensión (el último o el que se elija)
+  var prcP=null;
+  function pensView(p,y0){
+    var pays=(p.pays||[]).slice().reverse(),sel=$('prcSel');if(!pays.length)return;prcP=p;sel.innerHTML='';
+    pays.forEach(function(y,i){var o=document.createElement('option');o.value=i;o.textContent=(i===0?'Último pago: ':'Pago del ')+fdate(y.at)+' · '+money(y.amt||0)+((y.m||1)>1?' · '+y.m+' meses':'');sel.appendChild(o)});
+    sel.classList.toggle('hidden',pays.length<2);
+    function draw(){var y=pays[+sel.value||0],v=$('prcView');v.innerHTML='';try{v.appendChild(pensRecBuild(p,y).c)}catch(e){v.textContent='No se pudo mostrar el recibo.'}}
+    if(y0){var k=pays.indexOf(y0);if(k>0)sel.value=String(k)}
+    sel.onchange=draw;$('prcPrint').onclick=function(){pensPrintNow(p,pays[+sel.value||0])};
+    draw();$('dlgPRec').classList.remove('hidden');
+  }
+  $('prcClose').onclick=function(){$('dlgPRec').classList.add('hidden')};
+  function pensDays(y){
+    var from=(y.from!=null)?y.from:addMonths(y.until,-(y.m||1)),d=Math.max(1,Math.round((y.until-from)/86400000)),f=function(t){try{return new Date(t).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}catch(e){return fdate(t)}};
+    return {d:d,a:f(from+1),b:f(y.until)};
+  }
+  function pensPayNext(p,n){var now=Date.now(),base=(p.until&&p.until>=now)?p.until:now;return addMonths(base,n||1)}
+  function pensPayInfo(){var p=pensGet(pnPayId);if(p){var n=pnMo();$('pnPayInfo').textContent=(n>1?'Paga '+n+' meses. ':'')+'Nueva vigencia: hasta el '+fdate(pensPayNext(p,n))+'.'}}
   $('pnPayNo').onclick=function(){$('dlgPen').classList.add('hidden')};
   $('pnPayOk').onclick=function(){
     var amt=parseFloat($('pnPayAmt').value);if(!(amt>0)){$('pnPayInfo').textContent='Escribe el monto a cobrar.';return}
     var pp0=pensGet(pnPayId),btn=this;
-    if(pp0&&amt<(pp0.rate||0)-0.004&&!btn.dataset.ok){
-      if(!admUnlocked())$('pnPayInfo').textContent='Cobrar menos de la mensualidad ('+money(pp0.rate)+') requiere la clave de administrador.';
+    if(pp0&&amt<(pp0.rate||0)*pnMo()-0.004&&!btn.dataset.ok){
+      if(!admUnlocked())$('pnPayInfo').textContent='Cobrar menos de lo que corresponde ('+money((pp0.rate||0)*pnMo())+') requiere la clave de administrador.';
       admAsk(function(){btn.dataset.ok='1';btn.click()});return;
     }
     delete btn.dataset.ok;
-    var all=pensLoad(),now=Date.now(),nu=0,nm='';
-    all.forEach(function(p){if(p.id===pnPayId){nu=pensPayNext(p);p.until=nu;nm=p.name;(p.pays=p.pays||[]).push({at:now,amt:amt,until:nu,cn:cajActive?cajActive.name:'',cut:0})}});
-    pensSave(all);$('dlgPen').classList.add('hidden');if(typeof drawerOpen==='function')drawerOpen();
-    var m=$('pnMsg');m.className='msg ok';m.textContent='Mensualidad de '+nm+' cobrada ('+money(amt)+'). Vigente hasta '+fdate(nu)+'.';pensUI();
+    var all=pensLoad(),now=Date.now(),nu=0,nm='',rp=null;
+    var nMo=pnMo();all.forEach(function(p){if(p.id===pnPayId){var fr=(p.until&&p.until>=now)?p.until:now;nu=pensPayNext(p,nMo);p.until=nu;nm=p.name;(p.pays=p.pays||[]).push({at:now,amt:amt,from:fr,until:nu,m:nMo,cn:cajActive?cajActive.name:'',cut:0});rp=p}});
+    pensSave(all);$('dlgPen').classList.add('hidden');if(typeof drawerOpen==='function')drawerOpen();if(rp)pensReceipt(rp,rp.pays[rp.pays.length-1]);
+    var m=$('pnMsg');m.className='msg ok';m.textContent=(nMo>1?nMo+' meses de '+nm+' cobrados (':'Mensualidad de '+nm+' cobrada (')+money(amt)+'). Vigente hasta '+fdate(nu)+'.';pensUI();
   };
 
   // ===== Licencia (opcional): solo se activa si la compilación trae la llave pública =====
@@ -2706,6 +2813,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   var cloudDirty=false,cloudBusy=false,cloudVersion=0,CLK='park:cloud',restPending=null;
   function markDirty(){cloudDirty=true;cloudVersion++;try{liveSoon()}catch(e){}}
   function cloudGet(){try{var r=localStorage.getItem(CLK);return r?JSON.parse(r):{}}catch(e){return {}}}
+  function cloudHas(c){return !!(c&&c.on&&(c.rt||c.pw))}
   function cloudSet(o){try{localStorage.setItem(CLK,JSON.stringify(o))}catch(e){}}
   function cloudSay(t,bad){var m=$('cloudMsg');m.className='msg '+(bad?'bad':'ok');m.textContent=t}
   function cx(url,opt){
@@ -2721,8 +2829,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   function cloudToken(c){
     if(c.at&&c.exp&&Date.now()<c.exp-60000)return Promise.resolve(c.at);
-    if(!c.rt)return Promise.reject({code:401});
-    return cloudAuth(c,{refresh_token:c.rt},'refresh_token').then(function(j){c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;cloudSet(c);return c.at});
+    function relog(){return cloudAuth(c,{email:c.email,password:c.pw},'password').then(function(j){c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;c.err='';cloudSet(c);return c.at})}
+    if(!c.rt)return (c.pw&&c.email)?relog():Promise.reject({code:401});
+    return cloudAuth(c,{refresh_token:c.rt},'refresh_token').then(function(j){c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;cloudSet(c);return c.at},function(e){if(c.pw&&c.email)return relog();throw e});
   }
   function cloudReq(method,path,body,extra){
     var c=cloudGet();
@@ -2747,13 +2856,14 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var c=cloudGet(),on=!!c.on||$('cloudOn').checked&&!c.url;
     $('cloudOn').checked=!!c.on;$('cloudBox').classList.toggle('hidden',!c.on);
     $('cloudUrl').value=c.url||'';$('cloudKey').value=c.key||'';$('cloudMail').value=c.email||'';$('cloudDev').value=c.dev||'';
+    $('cloudRemember').checked=!!c.pw;$('cloudNoKey').classList.toggle('hidden',hasPwd());
     var conn=!!(c.on&&c.rt);
     $('cloudStatus').textContent=conn?('Conectado como '+c.email+'. '+(c.last?'Último respaldo: '+fmt(c.last)+'.':'Todavía no hay respaldo.')+(cloudDirty?' Hay cambios por respaldar.':'')+(c.err?' Último error: '+c.err:'')):'Sin conectar. Llena los datos y pulsa Conectar.';
     ['cloudNow','cloudRestore','cloudOff'].forEach(function(id){$(id).disabled=!conn});
     try{liveUI()}catch(e){}
   }
   function cloudBackup(silent){
-    var c=cloudGet();if(!c.on||!c.rt){return Promise.resolve()}
+    var c=cloudGet();if(!cloudHas(c)){return Promise.resolve()}
     if(cloudBusy)return Promise.resolve();cloudBusy=true;
     var versionAtStart=cloudVersion;
     var body={device:c.dev||'principal',data:cloudPack(),updated_at:new Date().toISOString()};
@@ -2771,11 +2881,11 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var base='Envía solo un resumen (cantidades, dinero y horas). No envía placas, fotos ni claves. Requiere la tabla live_stats en tu proyecto.';
     e.textContent=!c.live?base:(c.liveErr?('Error al enviar: '+c.liveErr):(c.liveLast?'Último envío: '+fmt(c.liveLast)+'.':'Activado. Se envía con cada entrada o cobro.'));
   }
-  function liveSoon(){var c=cloudGet();if(!c.on||!c.rt||!c.live)return;clearTimeout(liveT);liveT=setTimeout(livePush,2500)}
+  function liveSoon(){var c=cloudGet();if(!cloudHas(c)||!c.live)return;clearTimeout(liveT);liveT=setTimeout(livePush,2500)}
   function livePush(){
-    var c=cloudGet();if(!c.on||!c.rt||!c.live)return Promise.resolve();
+    var c=cloudGet();if(!cloudHas(c)||!c.live)return Promise.resolve();
     if(liveBusy){liveSoon();return Promise.resolve()}liveBusy=true;
-    var days=statsCalc().map(function(d){return {s:d.s,ent:d.ent,sal:d.sal,veh:d.veh,bat:d.bat,types:d.types,occ:d.occ}}),it={},n=0;
+    var days=statsCalc().map(function(d){return {s:d.s,ent:d.ent,sal:d.sal,veh:d.veh,bat:d.bat,pen:d.pen,penN:d.penN,types:d.types,occ:d.occ}}),it={},n=0;
     load().forEach(function(t){if(t&&!t.out){n++;var k=typeOf(t.type).name;it[k]=(it[k]||0)+1}});
     var body={device:c.dev||'principal',data:{v:1,name:cfg.name||'',at:Date.now(),days:days,inside:n,insideTypes:it},updated_at:new Date().toISOString()};
     return cloudReq('POST','live_stats?on_conflict=user_id,device',body,{Prefer:'resolution=merge-duplicates,return=minimal'}).then(function(r){
@@ -2790,16 +2900,18 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('cloudOn').addEventListener('change',function(){
     var want=this.checked,box=this;box.checked=!want;
     admAsk(function(){
-      var c=cloudGet();c.on=want;if(!want){c.at='';c.rt=''}cloudSet(c);cloudUI();cloudSay(want?'Activado. Llena los datos de tu cuenta y pulsa Conectar.':'Respaldo desactivado.');
+      var c=cloudGet();c.on=want;if(!want){c.at='';c.rt=''}cloudSet(c);cloudUI();cloudSay(want?(c.pw?'Reconectando…':'Activado. Llena los datos de tu cuenta y pulsa Conectar.'):'Respaldo desactivado.');
+      if(want&&c.pw&&c.url&&c.key&&c.email){cloudToken(c).then(function(){cloudUI();cloudDirty=true;return cloudBackup(false)}).catch(function(e){cloudSay(cloudErr(e),true)})}
       if(want)$('cloudBox').classList.remove('hidden');
     });
   });
   $('cloudConnect').onclick=function(){admAsk(function(){
-    var url=$('cloudUrl').value.trim(),key=$('cloudKey').value.trim(),mail=$('cloudMail').value.trim(),pass=$('cloudPass').value;
+    var url=$('cloudUrl').value.trim(),key=$('cloudKey').value.trim(),mail=$('cloudMail').value.trim(),pass=$('cloudPass').value||(cloudGet().pw||'');
     if(!/^https:\/\/\S+$/i.test(url)){cloudSay('La dirección del proyecto debe empezar con https://',true);return}
     if(key.length<20){cloudSay('Falta la clave pública (anon key).',true);return}
     if(!mail||!pass){cloudSay('Escribe el correo y la contraseña de tu cuenta.',true);return}
     var c=cloudGet();c.on=true;c.url=url;c.key=key;c.email=mail;c.dev=$('cloudDev').value.trim()||'principal';
+    if($('cloudRemember').checked)c.pw=pass;else delete c.pw;
     cloudSay('Conectando…');
     cloudAuth(c,{email:mail,password:pass},'password').then(function(j){
       c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;c.err='';cloudSet(c);
@@ -2807,7 +2919,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }).catch(function(e){cloudSay(cloudErr(e),true)});
   })};
   $('cloudNow').onclick=function(){cloudSay('Respaldando…');cloudBackup(false)};
-  $('cloudOff').onclick=function(){admAsk(function(){var c=cloudGet();c.on=false;c.at='';c.rt='';cloudSet(c);cloudUI();cloudSay('Desconectado. Los datos de este teléfono no se tocaron.')})};
+  $('cloudOff').onclick=function(){admAsk(function(){var c=cloudGet();c.on=false;c.at='';c.rt='';cloudSet(c);cloudUI();cloudSay(c.pw?'Respaldo en pausa. Para reanudarlo, vuelve a marcar «Activar respaldo en la nube».':'Respaldo en pausa. Los datos de este teléfono no se tocaron.')})};
+  $('cloudRemember').addEventListener('change',function(){if(!this.checked){var c=cloudGet();delete c.pw;cloudSet(c);cloudSay('Contraseña olvidada. Tendrás que escribirla al conectar.')}});
   $('cloudRestore').onclick=function(){admAsk(function(){
     cloudSay('Buscando el respaldo…');
     var dev=encodeURIComponent(cloudGet().dev||'principal');
@@ -3355,6 +3468,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     show("salida");
     var msg=$("salMsg");msg.className="msg";$("result").classList.add("hidden");$("exitWrap").classList.add("hidden");current=null;$("exitPhoto").classList.add("hidden");$("exitPhoto").removeAttribute("src");
     var id=parseCode($("code").value);$("code").value="";
+    if(/PD PARK - PENSI/.test(id)){var pm=id.match(/PLACA O ID: (.*?) [|·] /),pp0=pm?pensFind(pm[1].split(',')[0].trim()):null,pk=pp0?pensState(pp0).k:'';msg.textContent=pp0?('Recibo de pensión de '+pp0.name+': '+pensState(pp0).t+'.'):'Esta pensión no existe en este teléfono o fue dada de baja.';msg.classList.add(pk==='ok'||pk==='pron'?'ok':'bad');return}
     var t=load().filter(function(x){return x.id===id})[0];
     if(!t){msg.textContent="No encontramos ese boleto. Revisa el código.";msg.classList.add("bad");return}
     if(t.out){msg.textContent="Este boleto ya fue cobrado el "+fmt(t.out)+".";msg.classList.add("bad");return}
