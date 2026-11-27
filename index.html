@@ -411,7 +411,6 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   <section id="entrada" class="panel" role="tabpanel">
     <div id="bkWarn" class="bkWarn hidden" role="status"><span id="bkWarnTxt"></span><div class="bkBtns"><button class="mini" id="bkWarnGo" type="button">Respaldar ahora</button><button class="mini ghost" id="bkWarnLater" type="button">Más tarde</button></div></div>
     <div id="opsBar" class="bkWarn hidden" role="status"><b>Operaciones cerradas.</b> <span>Abre las operaciones para registrar entradas. Las salidas de los vehículos que siguen dentro sí se pueden cobrar.</span><div class="bkBtns"><button class="mini" id="opsOpenBtn" type="button">Abrir operaciones</button></div></div>
-    <p id="opsInfo" class="hint hidden"></p>
     <div id="regLegend" class="regLegend hidden" role="status"></div>
     <div class="types" id="vtypes" role="radiogroup" aria-label="Tipo de vehículo"></div>
     <div class="types">
@@ -2605,8 +2604,6 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function opsUI(){
     var open=opsIsOpen();
     $('opsBar').classList.toggle('hidden',open);document.body.classList.toggle('opsClosed',!open);
-    var i=$('opsInfo'),sh=opsReq()&&opsHas();i.classList.toggle('hidden',!sh);
-    i.textContent=sh?'Operaciones abiertas desde el '+fmt(cfg.ops.at)+(cfg.ops.cn?' por '+cfg.ops.cn:'')+'.':'';
   }
   $('cfgOpsOn').checked=opsReq();
   $('cfgOpsOn').addEventListener('change',function(){var el=this,want=el.checked;el.checked=!want;admAsk(function(){el.checked=want;cfg.opsOn=want;saveCfg();opsUI()})});
