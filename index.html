@@ -856,7 +856,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <p><b id="dlgWarn"></b></p>
     <p>Esta acción no se puede deshacer.</p>
     <button class="btn alt" id="dlgNo" type="button">Cancelar</button>
-    <button class="btn" id="dlgYes" type="button">Sí, realizar corte y borrar registros</button>
+    <button class="btn" id="dlgYes" type="button">Sí, realizar el corte</button>
   </div>
 </div>
 <div id="dlgDel" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgDelT">
@@ -1090,7 +1090,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(auto&&Date.now()-lastGenAt<1500)return;
     var list=load();
     if(auto)plate=autoKey(list);
-    if(list.some(function(t){return !t.out&&t.plate===plate})){
+    if(list.some(function(t){return !t.out&&(t.plate===plate||(!auto&&nk(t.plate)&&nk(t.plate)===nk(plate)))})){
       msg.textContent="Ese vehículo ya tiene un boleto activo.";msg.classList.add("bad");return}
     var type=document.querySelector('input[name="vtype"]:checked').value;
     var plan=$("planDay").checked?"dia":"hora";
@@ -1109,7 +1109,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(penMsg){msg.textContent=penMsg;msg.classList.add(penBad?"bad":"ok")}
     if(load().filter(function(t){return !t.out}).length>(parseInt(cfg.capacity,10)||50)){msg.textContent="Aviso: el estacionamiento superó su capacidad.";msg.classList.add("bad")}
     inRegistered(t,auto);
-    if(cfg.autoPrint!==false)setTimeout(function(){printNode($("ticketWrap").querySelector(".ticket"))},350);
+    if(cfg.autoPrint!==false)setTimeout(function(){printNode($("ticketWrap").querySelector(".ticket"),true)},350);
   }
   // ===== Registrar vehículo: al tocar un tipo se abre la pantalla de la placa =====
   var inOpenFlag=false,inPending=false,legT=null;
@@ -1166,6 +1166,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       phStream=s;var v=$("phVideo");v.srcObject=s;v.play();
     }).catch(function(){m.className="msg bad";m.textContent="No se pudo abrir la cámara. Puedes generar el boleto sin foto."});
   }
+  function photoClean(){phOpen(function(db){if(!db)return;try{
+    var ids={};load().forEach(function(t){if(!t.out)ids[t.id]=1});
+    var st=db.transaction("p","readwrite").objectStore("p"),rq=st.getAllKeys();
+    rq.onsuccess=function(){(rq.result||[]).forEach(function(k){if(!ids[k])st.delete(k)})};
+  }catch(e){}})}
+  setTimeout(photoClean,4000);
   $("phSnap").onclick=function(){
     var v=$("phVideo"),m=$("phMsg");
     if(!phStream||!v.videoWidth){m.className="msg bad";m.textContent="La cámara aún no está lista.";return}
@@ -1223,10 +1229,11 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     $('pvXIn').style.display=xo('in')?'flex':'none';
     $('pvXDur').style.display=xo('dur')?'flex':'none';
     var s=Math.min(cfg.qrSize||180,qrCap()),box=$('pvQr');box.innerHTML='';
+    if(typeof QRCode==='undefined')return;
     new QRCode(box,{text:'A-00001',width:s,height:s,correctLevel:QRCode.CorrectLevel.M});
   }
   function drawQr(){
-    if(!lastPayload)return;
+    if(!lastPayload||typeof QRCode==='undefined')return;
     var box=$('qr'),s=Math.min(cfg.qrSize||180,qrCap());box.innerHTML='';
     new QRCode(box,{text:lastPayload,width:s,height:s,correctLevel:QRCode.CorrectLevel.M});
   }
@@ -1582,7 +1589,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   function prReady(){return NATIVE||!!(cfg.printer&&navigator.bluetooth)}
   function prPrint(job){
-    if(NATIVE&&!cfg.printer){alert('Primero elige la impresora Bluetooth en Ajustes.');return Promise.resolve()}
+    if(NATIVE&&!cfg.printer){if(!job.auto)alert('Primero elige la impresora Bluetooth en Ajustes.');updPrChip();return Promise.resolve()}
     if(!NATIVE&&!navigator.bluetooth){prSay('Este navegador no permite Bluetooth. Usa la app Android para imprimir por Bluetooth.',true);return Promise.resolve()}
     job.paper=prPaper();
     return Promise.resolve().then(function(){
@@ -1739,8 +1746,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     }
     return {ops:ops,tail:cfg.padCut||0};
   }
-  function printNode(node){
-    if(prReady()){prPrint(jobTicket(node));return}
+  function printNode(node,auto){
+    if(prReady()){var jb=jobTicket(node);jb.auto=!!auto;prPrint(jb);return}
+    if(auto&&NATIVE)return;
     var pa=$('printArea'),c=node.cloneNode(true);
     [c].concat(Array.prototype.slice.call(c.querySelectorAll('[id]'))).forEach(function(e){e.removeAttribute('id')});
     pa.innerHTML='';pa.appendChild(c);window.print();
@@ -1880,6 +1888,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       var g=ex.filter(function(t){return (t.type||'auto')===k});
       if(g.length)rows.push([NAMES[k]+' ('+g.length+')',money(sumPaid(g))]);
     });
+    var adj=ex.filter(function(t){return t.calc!==undefined&&t.paid<t.calc});
+    if(adj.length)rows.push(['Cobros por debajo de lo calculado ('+adj.length+')','-'+money(adj.reduce(function(a,t){return a+(t.calc-(t.paid||0))},0))]);
     var dd=ex.filter(function(t){return t.plan==='dia'});
     if(dd.length)rows.push(['Boletos todo el día ('+dd.length+')',money(sumPaid(dd))]);
     var pp=pensPend();
@@ -1903,12 +1913,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function addDetail(rec,ex,pin){
     var m={};ex.concat(pin).forEach(function(t){m[t.id]=t});
     rec.ext=true;
-    rec.detail=Object.keys(m).map(function(k){var t=m[k];return {id:t.id,p:t.plate||'',ty:NAMES[t.type||'auto']||(t.type||'auto'),pl:t.plan==='dia'?1:0,i:t.in,o:t.out||0,m:t.paid||0,f:t.photo?1:0,ci:t.cn||'',co:t.con||'',pn:t.pn||''}}).sort(function(a,b){return a.i-b.i});
+    rec.detail=Object.keys(m).map(function(k){var t=m[k];return {id:t.id,p:t.plate||'',ty:NAMES[t.type||'auto']||(t.type||'auto'),pl:t.plan==='dia'?1:0,i:t.in,o:t.out||0,m:t.paid||0,c:(t.calc!==undefined?t.calc:undefined),f:t.photo?1:0,ci:t.cn||'',co:t.con||'',pn:t.pn||''}}).sort(function(a,b){return a.i-b.i});
   }
   function cutTitle(c){if(c.title)return c.title;return 'Corte del día ('+(c.partial?'parcial':'total')+(c.ext?' extendido':'')+')'}
   function detLines(c){
     return (c.detail||[]).map(function(v){
-      return {head:v.id+'  '+(v.p||'sin placa'),sub:v.ty+(v.pl?' (todo el día)':'')+(v.pn?' - PENSIÓN: '+v.pn:'')+(v.f?' - CON FOTO':''),ent:'Entrada: '+fmt(v.i)+(v.ci?' ('+v.ci+')':''),sal:'Salida: '+(v.o?fmt(v.o):'sigue dentro')+(v.co?' ('+v.co+')':''),cob:money(v.m||0),f:v.f};
+      return {head:v.id+'  '+(v.p||'sin placa'),sub:v.ty+(v.pl?' (todo el día)':'')+(v.pn?' - PENSIÓN: '+v.pn:'')+(v.f?' - CON FOTO':''),ent:'Entrada: '+fmt(v.i)+(v.ci?' ('+v.ci+')':''),sal:'Salida: '+(v.o?fmt(v.o):'sigue dentro')+(v.co?' ('+v.co+')':''),cob:money(v.m||0)+(v.c!==undefined&&v.c!==v.m?' (calculado '+money(v.c)+')':''),f:v.f};
     });
   }
   function fotoLine(c){var f=(c.detail||[]).filter(function(v){return v.f});return f.length?'Ingresaron con foto ('+f.length+'): boletos '+f.map(function(v){return v.id}).join(', '):''}
@@ -1933,11 +1943,12 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function statsExit(t){try{var l=statsLoad(),f=false;l.forEach(function(r){if(r.k===t.id&&r.i===t.in){r.o=t.out;r.a=t.paid||0;f=true}});if(!f)l.push({k:t.id,i:t.in,o:t.out,a:t.paid||0,t:typeOf(t.type).name});statsSave(l)}catch(e){}}
   function dayAt(k){var d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-k);return d.getTime()}
   function statsCalc(){
-    var l=statsLoad(),bl=bathLoad(),now=Date.now(),days=[],k;
+    var l=statsLoad(),bl=bathLoad(),now=Date.now(),days=[],k,inIds={};
+    try{load().forEach(function(t){if(!t.out)inIds[t.id+'|'+t.in]=1})}catch(e){}
     for(k=29;k>=0;k--)days.push({s:dayAt(k),e:dayAt(k-1),ent:0,sal:0,veh:0,bat:0,types:{},occ:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]});
     function idx(ts){for(var j=days.length-1;j>=0;j--)if(ts>=days[j].s&&ts<days[j].e)return j;return -1}
     l.forEach(function(r){
-      var a=idx(r.i),end=r.o||now;
+      var a=idx(r.i),end=r.o||(inIds[r.k+'|'+r.i]?now:r.i);
       if(a>=0){days[a].ent++;var ty=r.t||'Auto';days[a].types[ty]=(days[a].types[ty]||0)+1}
       if(r.o){var b=idx(r.o);if(b>=0){days[b].sal++;days[b].veh+=r.a||0}}
       days.forEach(function(dd){if(r.i<dd.e&&end>dd.s){for(var h=0;h<24;h++){var hs=dd.s+h*3600000;if(r.i<hs+3600000&&end>hs)dd.occ[h]++}}});
@@ -2957,19 +2968,19 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   };
   var dlgOk=false;
   $('dlgNo').onclick=function(){$('dlg').classList.add('hidden')};
-  $('dlgYes').onclick=function(){$('dlg').classList.add('hidden');dlgOk=true;$('cutBtn').click()};
+  $('dlgYes').onclick=function(){$('dlg').classList.add('hidden');admAsk(function(){dlgOk=true;$('cutBtn').click()})};
   $('dlg').addEventListener('click',function(e){if(e.target===this)this.classList.add('hidden')});
   $('cutBtn').onclick=function(){
     var btn=this;
-    if(!dlgOk){var all0=load(),in0=all0.filter(function(t){return !t.out}).length;$('dlgWarn').textContent='Se borrarán TODOS los registros de vehículos: '+all0.length+' en total, incluidos '+in0+' que siguen dentro. Los boletos de los que siguen dentro ya no se podrán cobrar.';$('dlg').classList.remove('hidden');$('dlgNo').focus();return}dlgOk=false;
+    if(!dlgOk){var all0=load(),in0=all0.filter(function(t){return !t.out}).length;$('dlgWarn').textContent='Se borrarán los registros de los '+(all0.length-in0)+' vehículos que ya salieron.'+(in0?' Los '+in0+' que siguen dentro se conservan y se cobran normalmente al salir.':'');$('dlg').classList.remove('hidden');$('dlgNo').focus();return}dlgOk=false;
     var all=load(),ex=pending(all),now=Date.now(),total=sumPaid(ex)+pensSum();
     var pin=pendingIn(all);if(!ex.length&&!pin.length&&!pensPend().length&&!bathPend().length)return;
     try{bkSnap('antes')}catch(e){}
-    var rec=makeCut(all,ex,pin,now,false);rec.cleared=all.length;if($('cutExt').checked)addDetail(rec,ex,pin);
+    var rec=makeCut(all,ex,pin,now,false);rec.cleared=all.filter(function(t){return t.out}).length;if($('cutExt').checked)addDetail(rec,ex,pin);
     var cuts=loadCuts();cuts.push(rec);saveCuts(cuts);
-    save([]);pensMarkCut(now);refresh();
+    var keep=all.filter(function(t){return !t.out});keep.forEach(function(t){t.cutIn=now});save(keep);pensMarkCut(now);refresh();
     renderCut();
-    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'. Se borraron '+all.length+' registros de vehículos.';
+    var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'. Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
     lastCut=rec;$('cutPrint').classList.remove('hidden');showCutPdf(rec);
   };
 
@@ -3088,7 +3099,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   function bathPrintTicket(r){
     try{
-      if(prReady()){prPrint(bathTicketOps(r));return}
+      if(prReady()){var bj=bathTicketOps(r);bj.auto=true;prPrint(bj);return}
       var pa=$('printArea'),c=document.createElement('div'),mk=function(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
       c.className='ticket exit';
       c.appendChild(mk('p','brand',cfg.name||'Estacionamiento'));c.appendChild(mk('p','kind','Tiquete de '+(cfg.bathName||'Baño')));c.appendChild(mk('div','cut'));
@@ -3285,11 +3296,14 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(t.out){msg.textContent="Este boleto ya fue cobrado el "+fmt(t.out)+".";msg.classList.add("bad");return}
     var ty=typeOf(t.type||"auto"),rate=ty.rate||0,tol=parseFloat($("tol").value)||0;
     var mins=Math.max(1,Math.round((Date.now()-t.in)/60000));
-    var hours=mins<=tol?0:Math.ceil(mins/60);
-    var total=t.plan==="dia"?(ty.day||0):hours*rate,penNote="",penBad2=false;
+    var dayP=ty.day||0,nDays=Math.floor(mins/1440),rest=mins-nDays*1440,total;
+    if(t.plan==="dia")total=Math.max(1,Math.ceil(mins/1440))*dayP;
+    else if(mins<=tol)total=0;
+    else{var hrs=rest>0?Math.ceil(rest/60):0,part=hrs*rate;if(dayP>0){total=nDays*dayP+Math.min(part,dayP)}else total=Math.ceil(mins/60)*rate}
+    var penNote="",penBad2=false;
     if(t.pen){var pp=pensGet(t.pen);if(pp&&Date.now()<=pp.until){total=0;penNote="Pensionado: "+pp.name+". "+pensState(pp).t+". Sin cobro."}else if(pp){penNote="La pensión de "+pp.name+" venció el "+fdate(pp.until)+". Se cobra la tarifa normal.";penBad2=true}}
     var isLost=false;if(lostMode&&!(t.pen&&penNote.indexOf("Sin cobro")>-1)){total=parseFloat(cfg.lostFee)||0;penNote="Boleto extraviado: tarifa fija de $"+total.toFixed(2)+".";penBad2=false;isLost=true}lostMode=false;
-    current={id:t.id,total:total,lost:isLost};
+    current={id:t.id,total:total,calc:total,lost:isLost};
     $("amount").textContent="$"+total.toFixed(2);$("adj").value=total.toFixed(2);
     $("rPlate").textContent=t.plate+" ("+(NAMES[t.type]||"Auto")+(t.plan==="dia"?", todo el día":"")+")";$("rIn").textContent=fmt(t.in);
     $("rDur").textContent=Math.floor(mins/60)+" h "+(mins%60)+" min";
@@ -3301,16 +3315,23 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(!current)return;
     var entered=String($("adj").value).trim(),amount=entered===''?NaN:Number(entered);
     if(!Number.isFinite(amount)||amount<0){var payMsg=$("salMsg");payMsg.className="msg bad";payMsg.textContent="El importe debe ser un número válido igual o mayor que cero.";return}
+    amount=Math.round(amount*100)/100;
+    if(amount<current.calc-0.004&&!current.ok){
+      var cur0=current;
+      admAsk(function(){if(current===cur0){cur0.ok=true;autoScan=byScan;$("pay").click()}});
+      if(!admUnlocked()){var dm=$("salMsg");dm.className="msg bad";dm.textContent="Cobrar menos de lo calculado ("+money(cur0.calc)+") requiere la clave de administrador."}
+      return;
+    }
     var tickets=load(),ticketFound=tickets.some(function(t){return t.id===current.id&&!t.out});
     if(!ticketFound){var staleMsg=$("salMsg");staleMsg.className="msg bad";staleMsg.textContent="Este boleto ya no está disponible o ya fue cobrado. Vuelve a consultar el boleto.";current=null;return}
     current.total=amount;photoDel(current.id);
     var list=tickets;
-    list.forEach(function(t){if(t.id===current.id){t.out=Date.now();t.paid=current.total;if(current.lost)t.lost=true;if(cajActive){t.co=cajActive.id;t.con=cajActive.name}}});
+    list.forEach(function(t){if(t.id===current.id){t.out=Date.now();t.paid=current.total;if(Math.abs(current.total-current.calc)>0.004)t.calc=current.calc;if(current.lost)t.lost=true;if(cajActive){t.co=cajActive.id;t.con=cajActive.name}}});
     save(list);list.forEach(function(t){if(t.id===current.id)statsExit(t)});refresh();drawerOpen();
     $("result").classList.add("hidden");$("exitPhoto").classList.add("hidden");$("code").value="";$("man").value="";$("manList").innerHTML="";renderExit(current.id);
     var askP=cfg.askExit===true&&!byScan;
     $("printExit").classList.toggle("hidden",!askP);
-    if(!askP)setTimeout(function(){printNode($("exitTicket"))},350);
+    if(!askP)setTimeout(function(){printNode($("exitTicket"),true)},350);
     var m=$("salMsg");m.className="msg ok";m.textContent="Cobro de $"+current.total.toFixed(2)+" registrado. Salida libre.";
     current=null;
   };
