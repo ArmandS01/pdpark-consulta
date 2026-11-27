@@ -2611,7 +2611,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(opsIsOpen()){opsUI();return}
     if(cajList().length&&!cajActive){cajGate();return}
     cfg.ops={at:Date.now(),cn:cajActive?cajActive.name:''};saveCfg();opsUI();
-    var m=$('entMsg');m.className='msg ok';m.textContent='Operaciones abiertas a las '+new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+(/\.$/.test(new Date(cfg.ops.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}))?'':'.');
+    var m=$('entMsg');m.className='msg';m.textContent='';
   };
   function opsRows(now,closing){
     if(!opsHas())return [];
