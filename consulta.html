@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PD Park Consulta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Inter:wght@400;600;700&display=swap">
+<style>
+/* Distribución: una columna angosta tipo tablero de turno; el dato grande arriba, detalle debajo. */
+:root{
+  --bg:#f3f4f1;--surface:#ffffff;--ink:#16201b;--muted:#5d6a63;--line:#dde2dc;
+  --brand:#0a7d3f;--brand-soft:#d9efe1;--amber:#f2b705;--bad:#c4321f;--bar:#b9c9bf;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1512;--surface:#18201c;--ink:#eaf1ec;--muted:#92a39a;--line:#26322c;
+  --brand:#2fc072;--brand-soft:#1b3a29;--amber:#f2b705;--bad:#ff7a66;--bar:#34453c;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1512;--surface:#18201c;--ink:#eaf1ec;--muted:#92a39a;--line:#26322c;
+  --brand:#2fc072;--brand-soft:#1b3a29;--amber:#f2b705;--bad:#ff7a66;--bar:#34453c;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 var(--font);margin:0;
+  padding-block:14px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font:700 22px/1.1 var(--font);margin:0}
+h2{font:700 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.live{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bad)}.live.ok .dot{background:var(--brand);box-shadow:0 0 0 0 var(--brand);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.live.ok .dot{animation:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1;min-height:44px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;font:600 15px var(--font);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+:root[data-theme="dark"] .tabs button[aria-pressed="true"]{color:#06210f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tabs button[aria-pressed="true"]{color:#06210f}}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.big{font:700 64px/0.9 var(--num);font-variant-numeric:tabular-nums}
+.big small{font:600 14px var(--font);color:var(--muted);margin-left:6px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.kpi b{display:block;font:700 30px/1 var(--num);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi.money{grid-column:1/-1;background:var(--brand-soft);border-color:transparent}
+.kpi.money b{font-size:46px;color:var(--brand)}
+.delta{font-size:13px;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:var(--brand-soft);color:var(--ink);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
+.row{display:grid;grid-template-columns:minmax(70px,28%) 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:14px}
+.track{height:12px;background:var(--bar);border-radius:6px;overflow:hidden}.fill{height:100%;background:var(--brand);border-radius:6px}
+.row b{font-variant-numeric:tabular-nums}
+.cols{display:flex;align-items:flex-end;gap:2px;height:120px}
+.col{flex:1;min-width:0;background:var(--bar);border-radius:3px 3px 0 0;min-height:2px}
+.col.hi{background:var(--brand)}.col.today{background:var(--amber)}
+.axis{display:flex;gap:2px;margin-top:4px;font-size:11px;color:var(--muted)}.axis span{flex:1;text-align:center;min-width:0}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+form{display:flex;flex-direction:column;gap:6px}
+label{font-size:13px;font-weight:600;color:var(--muted);margin-top:6px}
+input{font:16px var(--font);min-height:46px;padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.btn{min-height:48px;border:0;border-radius:12px;background:var(--brand);color:#fff;font:700 16px var(--font);cursor:pointer;margin-top:10px}
+:root[data-theme="dark"] .btn{color:#06210f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06210f}}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.msg{font-size:14px;margin:8px 0 0}.msg.bad{color:var(--bad)}
+.links{display:flex;gap:8px}.links .btn{flex:1}
+</style>
+
+</head><body>
+<div class="wrap">
+  <div class="top"><h1 id="title">PD Park</h1><span class="live" id="live"><i class="dot"></i><span id="liveTxt">Sin conexión</span></span></div>
+
+  <section class="card" id="login" hidden>
+    <h2>Conectar con tu estacionamiento</h2>
+    <form id="loginForm" autocomplete="off">
+      <label for="fUrl">Dirección del proyecto (URL)</label>
+      <input id="fUrl" type="url" placeholder="https://xxxx.supabase.co" autocapitalize="off" required>
+      <label for="fKey">Clave pública (anon key)</label>
+      <input id="fKey" type="text" autocapitalize="off" required>
+      <label for="fMail">Correo de la cuenta</label>
+      <input id="fMail" type="email" autocapitalize="off" required>
+      <label for="fPass">Contraseña</label>
+      <input id="fPass" type="password" required>
+      <label for="fDev">Nombre del teléfono del estacionamiento</label>
+      <input id="fDev" type="text" placeholder="principal" maxlength="30">
+      <button class="btn" type="submit">Conectar</button>
+      <button class="btn ghost" type="button" id="demoBtn">Ver un ejemplo</button>
+      <p class="msg" id="loginMsg" role="status"></p>
+    </form>
+    <p class="note">Usa la misma cuenta y dirección que en PD Park › Ajustes › Respaldo en la nube. La contraseña no se guarda en este teléfono.</p>
+  </section>
+
+  <div id="board" hidden>
+    <div class="tabs" role="group" aria-label="Periodo">
+      <button type="button" data-per="1" aria-pressed="true">Hoy</button>
+      <button type="button" data-per="7" aria-pressed="false">7 días</button>
+      <button type="button" data-per="30" aria-pressed="false">30 días</button>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <h2>Ahora dentro</h2>
+      <div class="hero"><div class="big"><span id="inside">0</span><small>vehículos</small></div></div>
+      <div class="chips" id="insideTypes"></div>
+    </section>
+
+    <div class="grid" style="margin-top:14px">
+      <div class="kpi money"><span id="moneyLbl">Recaudado hoy</span><b id="money">$0</b><div class="delta" id="delta"></div></div>
+      <div class="kpi"><b id="ent">0</b><span>Entradas</span></div>
+      <div class="kpi"><b id="sal">0</b><span>Salidas</span></div>
+      <div class="kpi"><b id="bat">$0</b><span>Baño</span></div>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <h2>Tipos más frecuentes</h2>
+      <div id="types"></div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <h2 id="hoursTitle">Horas de mayor ocupación</h2>
+      <div class="cols" id="hours" role="img" aria-label="Ocupación por hora"></div>
+      <div class="axis" id="hoursAxis"></div>
+      <p class="note" id="hoursNote"></p>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <h2>Comparación entre días</h2>
+      <div class="cols" id="daysChart" role="img" aria-label="Recaudado por día"></div>
+      <div class="axis" id="daysAxis"></div>
+      <p class="note" id="daysNote"></p>
+    </section>
+
+    <div class="links" style="margin-top:14px">
+      <button class="btn ghost" type="button" id="refresh">Actualizar ahora</button>
+      <button class="btn ghost" type="button" id="logout">Salir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)},CK='pdpark:consulta',per=1,data=null,demo=false,timer=null,tick=null,lastOk=0,busy=false;
+  function ls(){try{return JSON.parse(localStorage.getItem(CK)||'{}')}catch(e){return {}}}
+  function lsSet(o){try{localStorage.setItem(CK,JSON.stringify(o))}catch(e){}}
+  var money=function(n){return '$'+(Math.round((n||0)*100)/100).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2})};
+  var hourTxt=function(h){return (h%12||12)+(h<12?' am':' pm')};
+  var DAYS=['D','L','M','M','J','V','S'];
+
+  /* ---------- datos de ejemplo ---------- */
+  function demoData(){
+    var days=[],now=new Date(),k,h;now.setHours(0,0,0,0);
+    for(k=29;k>=0;k--){
+      var d=new Date(now);d.setDate(d.getDate()-k);var wk=d.getDay(),f=(wk===5||wk===6)?1.4:(wk===0?0.7:1),ent=Math.round((60+((k*37)%25))*f),sal=k===0?ent-9:ent;
+      var occ=[];for(h=0;h<24;h++){var x=Math.max(0,Math.round(14*Math.exp(-Math.pow((h-13)/4.2,2))*f+(h>=8&&h<=20?2:0)));occ.push(k===0&&h>new Date().getHours()?0:x)}
+      var en=k===0?Math.round(ent*0.6):ent;days.push({s:d.getTime(),ent:en,sal:k===0?Math.round(sal*0.5):sal,veh:Math.round(sal*(k===0?0.5:1)*24),bat:Math.round(sal*0.5*3.5),types:{Auto:Math.round(en*0.72),Moto:Math.round(en*0.22),Camioneta:en-Math.round(en*0.72)-Math.round(en*0.22)},occ:occ});
+    }
+    return {v:1,name:'Estacionamiento Centro',at:Date.now(),days:days,inside:9,insideTypes:{Auto:6,Moto:2,Camioneta:1}};
+  }
+
+  /* ---------- pantalla ---------- */
+  function sums(sel){
+    var m={ent:0,sal:0,veh:0,bat:0,types:{},hours:[],act:0},h;
+    sel.forEach(function(d){m.ent+=d.ent;m.sal+=d.sal;m.veh+=d.veh;m.bat+=d.bat;if(d.ent||d.sal)m.act++;Object.keys(d.types||{}).forEach(function(t){m.types[t]=(m.types[t]||0)+d.types[t]})});
+    for(h=0;h<24;h++){var s=0;sel.forEach(function(d){if(d.ent||d.sal)s+=(d.occ||[])[h]||0});m.hours.push(m.act?s/m.act:0)}
+    return m;
+  }
+  function render(){
+    if(!data)return;var all=data.days||[],sel=all.slice(-per),m=sums(sel),today=all[all.length-1]||{veh:0,bat:0};
+    $('title').textContent=data.name||'PD Park';
+    $('inside').textContent=data.inside||0;
+    var it=$('insideTypes');it.innerHTML='';Object.keys(data.insideTypes||{}).forEach(function(k){var c=document.createElement('span');c.className='chip';c.textContent=k+' '+data.insideTypes[k];it.appendChild(c)});
+    $('moneyLbl').textContent=per===1?'Recaudado hoy':'Recaudado en '+per+' días';
+    $('money').textContent=money(m.veh+m.bat);$('ent').textContent=m.ent;$('sal').textContent=m.sal;$('bat').textContent=money(m.bat);
+    var y=all[all.length-2],dl=$('delta');
+    if(y){var t=(today.veh||0)+(today.bat||0),yy=(y.veh||0)+(y.bat||0),df=t-yy;dl.textContent='Ayer cerró con '+money(yy)+(df>=0?'. Hoy va '+money(df)+' arriba.':'. Hoy va '+money(-df)+' abajo.')}else dl.textContent='';
+    var tb=$('types');tb.innerHTML='';var tk=Object.keys(m.types).sort(function(a,b){return m.types[b]-m.types[a]}),mx=tk.length?m.types[tk[0]]:1;
+    if(!tk.length)tb.innerHTML='<p class="note">Todavía no hay entradas en este periodo.</p>';
+    tk.forEach(function(k){var r=document.createElement('div');r.className='row';r.innerHTML='<span></span><div class="track"><div class="fill"></div></div><b></b>';r.children[0].textContent=k;r.children[1].firstChild.style.width=Math.max(4,m.types[k]/mx*100)+'%';r.children[2].textContent=m.types[k];tb.appendChild(r)});
+    // horas
+    var hv=m.hours,hmax=Math.max.apply(null,hv.concat([0.0001])),hb=$('hours'),ha=$('hoursAxis');hb.innerHTML='';ha.innerHTML='';
+    var top=hv.map(function(v,i){return [v,i]}).sort(function(a,b){return b[0]-a[0]}).slice(0,3).filter(function(x){return x[0]>0}).map(function(x){return x[1]});
+    hv.forEach(function(v,i){var c=document.createElement('div');c.className='col'+(top.indexOf(i)>-1?' hi':'');c.style.height=Math.max(2,v/hmax*100)+'%';c.title=hourTxt(i)+': '+v.toFixed(1);hb.appendChild(c);var a=document.createElement('span');a.textContent=i%3===0?hourTxt(i).replace(' ',''):'';ha.appendChild(a)});
+    $('hoursTitle').textContent='Horas de mayor ocupación'+(per>1?' (promedio)':'');
+    $('hoursNote').textContent=top.length?('Más lleno: '+top.slice().sort(function(a,b){return a-b}).map(hourTxt).join(', ')+'. Vehículos dentro por hora.'):'Todavía no hay datos de ocupación.';
+    // días
+    var n=per===1?7:per,ds=all.slice(-n),tot=ds.map(function(d){return (d.veh||0)+(d.bat||0)}),dm=Math.max.apply(null,tot.concat([1])),db=$('daysChart'),da=$('daysAxis');db.innerHTML='';da.innerHTML='';
+    ds.forEach(function(d,i){var c=document.createElement('div');c.className='col'+(i===ds.length-1?' today':'');c.style.height=Math.max(2,tot[i]/dm*100)+'%';c.title=new Date(d.s).toLocaleDateString('es-MX')+': '+money(tot[i]);db.appendChild(c);var a=document.createElement('span');a.textContent=(n<=7||i%5===0)?DAYS[new Date(d.s).getDay()]+(n>7?new Date(d.s).getDate():''):'';da.appendChild(a)});
+    var best=tot.indexOf(Math.max.apply(null,tot));
+    $('daysNote').textContent='Recaudado por día, hoy en amarillo. Mejor día: '+new Date(ds[best].s).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+' con '+money(tot[best])+'.';
+  }
+  function setLive(ok,txt){$('live').className='live'+(ok?' ok':'');$('liveTxt').textContent=txt}
+  function age(){if(demo){setLive(true,'Ejemplo');return}if(!data)return;var s=Math.max(0,Math.round((Date.now()-data.at)/1000)),t=s<60?s+' s':s<3600?Math.round(s/60)+' min':Math.round(s/3600)+' h';
+    var stale=Date.now()-lastOk>20000;setLive(!stale&&s<3600,stale?'Sin conexión':'En vivo · hace '+t)}
+
+  /* ---------- Supabase ---------- */
+  function base(c){return String(c.url||'').replace(/\/+$/,'')}
+  function fx(url,opt){var ac=new AbortController(),t=setTimeout(function(){ac.abort()},15000);opt.signal=ac.signal;return fetch(url,opt).then(function(r){clearTimeout(t);return r},function(e){clearTimeout(t);throw e})}
+  function auth(c,body,grant){return fx(base(c)+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{'Content-Type':'application/json',apikey:c.key},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw {code:r.status};return j},function(){throw {code:r.status}})})}
+  function token(c){
+    if(c.at&&c.exp&&Date.now()<c.exp-60000)return Promise.resolve(c.at);
+    if(!c.rt)return Promise.reject({code:401});
+    return auth(c,{refresh_token:c.rt},'refresh_token').then(function(j){c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;lsSet(c);return c.at});
+  }
+  function fetchNow(){
+    var c=ls();if(demo||!c.rt||busy)return Promise.resolve();busy=true;
+    return token(c).then(function(tk){
+      return fx(base(c)+'/rest/v1/live_stats?select=data,updated_at&device=eq.'+encodeURIComponent(c.dev||'principal')+'&limit=1',{headers:{apikey:c.key,Authorization:'Bearer '+tk}});
+    }).then(function(r){if(!r.ok)throw {code:r.status};return r.json()}).then(function(rows){
+      busy=false;lastOk=Date.now();
+      if(!rows||!rows.length){setLive(false,'Sin datos todavía');$('title').textContent='PD Park';return}
+      data=rows[0].data;data.at=data.at||new Date(rows[0].updated_at).getTime();render();age();
+    }).catch(function(e){busy=false;if(e&&(e.code===400||e.code===401||e.code===403)){showLogin('La sesión caducó. Vuelve a conectar.')}else setLive(false,e&&e.code===404?'Falta la tabla live_stats':'Sin conexión')});
+  }
+  function start(){stop();fetchNow();timer=setInterval(fetchNow,5000);tick=setInterval(age,1000)}
+  function stop(){clearInterval(timer);clearInterval(tick)}
+
+  function showBoard(){$('login').hidden=true;$('board').hidden=false}
+  function showLogin(msg){stop();$('board').hidden=true;$('login').hidden=false;var c=ls();$('fUrl').value=c.url||'';$('fKey').value=c.key||'';$('fMail').value=c.email||'';$('fDev').value=c.dev||'';$('loginMsg').textContent=msg||'';$('loginMsg').className='msg'+(msg?' bad':'')}
+
+  $('loginForm').addEventListener('submit',function(e){
+    e.preventDefault();var c={url:$('fUrl').value.trim(),key:$('fKey').value.trim(),email:$('fMail').value.trim(),dev:$('fDev').value.trim()||'principal'},m=$('loginMsg');
+    m.className='msg';m.textContent='Conectando…';
+    auth(c,{email:c.email,password:$('fPass').value},'password').then(function(j){
+      c.at=j.access_token;c.rt=j.refresh_token;c.exp=Date.now()+(j.expires_in||3600)*1000;lsSet(c);$('fPass').value='';demo=false;showBoard();setLive(false,'Conectando…');start();
+    }).catch(function(er){m.className='msg bad';m.textContent=er&&er.code?'Correo o contraseña incorrectos.':'No hay conexión o la dirección no es correcta.'});
+  });
+  $('demoBtn').onclick=function(){demo=true;data=demoData();showBoard();render();age()};
+  $('refresh').onclick=function(){if(demo){data=demoData();render()}else fetchNow()};
+  $('logout').onclick=function(){var c=ls();lsSet({url:c.url,key:c.key,email:c.email,dev:c.dev});demo=false;data=null;showLogin('')};
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){per=+b.getAttribute('data-per');Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});render()}});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&!demo&&ls().rt)fetchNow()});
+
+  if(/[#&]demo\b/.test(location.hash)){demo=true;data=demoData();showBoard();render();age()}
+  else if(ls().rt){showBoard();setLive(false,'Conectando…');start()}
+  else showLogin('');
+})();
+</script>
+
+</body></html>
