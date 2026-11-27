@@ -1127,7 +1127,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var t=document.querySelector('input[name="vtype"]:checked');if(!t)return;
     var ty=typeOf(t.value),plan=$('planDay').checked,photo=$('withPhoto').checked;
     $('inTitle').textContent=(ty.name||t.value)+(photo?' · con foto':'');
-    $('inRate').textContent='Tarifa: '+(plan?'todo el día (12 h) '+money(ty.day||0):money(ty.rate||0)+' por hora'+((ty.day||0)>0?', máximo '+money(ty.day)+' hasta el corte':''));
+    $('inRate').textContent='Tarifa: '+(plan?'todo el día (12 h) '+money(ty.day||0):money(ty.rate||0)+' por hora');
     document.querySelector('#dlgIn .inPlate').style.display=photo?'none':'';$('inPhotoNote').style.display=photo?'block':'none';
     $('inMsg').className='msg';$('inMsg').textContent='';$('regLegend').classList.add('hidden');
     $('plate').value='';$('plate').classList.remove('plLong');inSync();
@@ -3009,7 +3009,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     try{bkSnap('antes')}catch(e){}
     var rec=makeCut(all,ex,pin,now,false);rec.rows=opsRows(now,true).concat(rec.rows);if(cfg.ops){rec.opAt=cfg.ops.at;rec.opBy=cfg.ops.cn||''}cfg.ops=null;saveCfg();opsUI();rec.cleared=all.filter(function(t){return t.out}).length;if($('cutExt').checked)addDetail(rec,ex,pin);
     var cuts=loadCuts();cuts.push(rec);saveCuts(cuts);
-    var keep=all.filter(function(t){return !t.out});keep.forEach(function(t){t.cutIn=now;(t.cuts=t.cuts||[]).push(now)});save(keep);pensMarkCut(now);refresh();
+    var keep=all.filter(function(t){return !t.out});keep.forEach(function(t){t.cutIn=now});save(keep);pensMarkCut(now);refresh();
     renderCut();
     var m=$('cutMsg');m.className='msg ok';m.textContent='Corte total realizado: '+pin.length+' entradas, '+ex.length+' salidas, '+money(total)+'.'+(opsReq()?' Operaciones cerradas.':'')+' Se borraron '+(all.length-keep.length)+' registros de vehículos'+(keep.length?'; '+keep.length+' siguen dentro.':'.');
     lastCut=rec;$('cutPrint').classList.remove('hidden');showCutPdf(rec);
@@ -3314,16 +3314,6 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   };
 
   var current=null;
-  // Por hora con tope: entre un corte total y el siguiente, nunca se cobra más que el precio del día
-  function hourFare(tin,tout,rate,dayP,cuts){
-    var b=[tin];(cuts||[]).slice().sort(function(a,c){return a-c}).forEach(function(c){if(c>tin&&c<tout)b.push(c)});b.push(tout);
-    var tot=0;
-    for(var i=0;i<b.length-1;i++){
-      var m=Math.max(1,Math.round((b[i+1]-b[i])/60000)),part=Math.ceil(m/60)*rate;
-      tot+=dayP>0?Math.min(part,dayP):part;
-    }
-    return Math.round(tot*100)/100;
-  }
   function parseCode(s){
     s=s.trim().toUpperCase();
     return s.indexOf("PARK|")===0?s.split("|")[1]:s;
@@ -3341,7 +3331,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     // Todo el día: cubre 12 horas; si se pasa, se cobra otro bloque de 12 horas
     if(t.plan==="dia")total=Math.max(1,Math.ceil(mins/720))*dayP;
     else if(mins<=tol)total=0;
-    else total=hourFare(t.in,Date.now(),rate,dayP,t.cuts||(t.cutIn?[t.cutIn]:[]));
+    else total=Math.ceil(mins/60)*rate;
     var penNote="",penBad2=false;
     if(t.pen){var pp=pensGet(t.pen);if(pp&&Date.now()<=pp.until){total=0;penNote="Pensionado: "+pp.name+". "+pensState(pp).t+". Sin cobro."}else if(pp){penNote="La pensión de "+pp.name+" venció el "+fdate(pp.until)+". Se cobra la tarifa normal.";penBad2=true}}
     var isLost=false;if(lostMode&&!(t.pen&&penNote.indexOf("Sin cobro")>-1)){total=parseFloat(cfg.lostFee)||0;penNote="Boleto extraviado: tarifa fija de $"+total.toFixed(2)+".";penBad2=false;isLost=true}lostMode=false;
