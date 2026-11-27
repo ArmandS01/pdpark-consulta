@@ -314,6 +314,7 @@ body.scanning .moreMenu{display:none}
 .stGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stBox{border:2px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}.stBox b{display:block;font-size:calc(26px*var(--ui,1));line-height:1.15}.stBox span{font-size:calc(13px*var(--ui,1));color:var(--muted)}
 .stRow{display:grid;grid-template-columns:72px 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:calc(14px*var(--ui,1))}.stRow>span:last-child{font-weight:700;text-align:right}
 body.opsClosed #entrada .types{display:none}
+body.noDay .trates>div:nth-child(2){display:none}
 .bkWarn{border:2px solid var(--accent);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:calc(15px*var(--ui,1));line-height:1.3}.bkWarn.hidden{display:none}.bkBtns{display:flex;gap:8px;margin-top:8px}.bkBtns .mini{flex:1;min-height:44px}
 .bkRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:calc(15px*var(--ui,1))}.bkRow small{display:block;color:var(--muted)}.bkRow .mini{min-height:44px;padding:0 12px}
 .chCols{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:2px solid var(--line);padding-top:6px;margin-top:6px}
@@ -529,6 +530,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <button class="btn alt" id="typeAdd" type="button">Agregar tipo de vehículo</button>
     <label for="tol" style="margin-top:14px">Tolerancia sin cobro (min)</label>
     <input id="tol" type="number" min="0" value="0">
+    <label class="chk" style="margin-top:14px"><input type="checkbox" id="dayOn">Ofrecer boleto todo el día</label>
+    <p class="hint">Si lo quitas, en Entrada desaparece la opción «Todo el día» y solo se cobra por hora. Los boletos de todo el día que ya estén dentro se cobran normalmente.</p>
     <label class="chk" style="margin-top:14px"><input type="checkbox" id="lostOn">Cobrar boleto extraviado</label>
     <label for="lostFee">Precio del boleto extraviado ($)</label>
     <input id="lostFee" type="number" min="0" step="0.5" value="0">
@@ -1102,7 +1105,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(list.some(function(t){return !t.out&&(t.plate===plate||(!auto&&nk(t.plate)&&nk(t.plate)===nk(plate)))})){
       msg.textContent="Ese vehículo ya tiene un boleto activo.";msg.classList.add("bad");return}
     var type=document.querySelector('input[name="vtype"]:checked').value;
-    var plan=$("planDay").checked?"dia":"hora";
+    var plan=$("planDay").checked&&cfg.dayOn!==false?"dia":"hora";
     var t={id:newId(list,typeOf(type).name),folio:(cfg.numFolio===true?lastFolio:0),plate:plate,auto:auto,type:type,plan:plan,in:Date.now(),out:null,rh:typeOf(type).rate||0,rd:typeOf(type).day||0};if(photo)t.photo=true;
     if(cajActive){t.ci=cajActive.id;t.cn=cajActive.name}
     var pen=plate?pensFind(plate):null,penMsg="",penBad=false;
@@ -3122,6 +3125,10 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('tol').value=cfg.tol;
   // Boleto extraviado: precio fijo definido en Ajustes › Tarifas (protegido con la clave de administrador)
   var lostMode=false;
+  // Boleto todo el día: se puede quitar desde Ajustes › Tarifas
+  function dayApply(){var on=cfg.dayOn!==false;$('planDay').closest('label').classList.toggle('hidden',!on);if(!on)$('planDay').checked=false;document.body.classList.toggle('noDay',!on)}
+  $('dayOn').checked=cfg.dayOn!==false;dayApply();
+  $('dayOn').addEventListener('change',function(){cfg.dayOn=this.checked;saveCfg();dayApply()});
   function lostRefresh(){var on=cfg.lostOn===true&&(parseFloat(cfg.lostFee)||0)>0;$('tLost').classList.toggle('hidden',!on)}
   $('lostOn').checked=cfg.lostOn===true;$('lostFee').value=cfg.lostFee||0;
   $('lostOn').addEventListener('change',function(){cfg.lostOn=this.checked;saveCfg();lostRefresh()});
