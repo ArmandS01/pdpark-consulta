@@ -856,6 +856,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <div id="cutRows"></div>
     <p class="hint" id="cutInside"></p>
     <button class="btn alt hidden" id="freeBtn" type="button">Salida sin cobro de vehículos dentro</button>
+    <button class="btn alt hidden" id="cxBtn" type="button">Cancelar un cobro</button>
     <p class="hint">El corte parcial solo genera el reporte y no cierra el periodo. El corte total lo cierra y borra todos los registros de vehículos.</p>
     <label class="chk"><input type="checkbox" id="cutExt">Corte extendido (agrega el detalle de cada vehículo: boleto, placa, entrada, salida y cobro)</label>
     <button class="btn alt" id="cutPartial" type="button">Corte parcial</button>
@@ -970,6 +971,20 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     <p><b>La clave de administrador no se puede recuperar.</b> Anótala y guárdala en un lugar seguro.</p>
     <p id="dlgNoteQ"></p>
     <button class="btn" id="dlgNoteOk" type="button">Entendido</button>
+  </div>
+</div>
+<div id="dlgCx" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgCxT">
+  <div class="box">
+    <h3 id="dlgCxT">Cancelar un cobro</h3>
+    <p class="hint" style="margin-top:0">Elige el cobro equivocado. Si es una salida, el vehículo vuelve a quedar dentro. En pensiones solo se puede cancelar el último pago. La cancelación queda registrada en el corte.</p>
+    <div id="cxList" style="max-height:36vh;overflow:auto;margin:6px 0 10px"></div>
+    <label for="cxWhy">Motivo</label>
+    <input id="cxWhy" maxlength="60" placeholder="Ej.: se cobró el boleto equivocado">
+    <label for="cxPwd" style="margin-top:10px">Clave de administrador</label>
+    <input id="cxPwd" type="password" autocomplete="off" maxlength="8">
+    <div id="cxErr" class="msg bad" role="alert"></div>
+    <button class="btn" id="cxOk" type="button">Cancelar el cobro</button>
+    <button class="btn alt" id="cxNo" type="button">Cerrar</button>
   </div>
 </div>
 <div id="dlgFree" class="dlg hidden" role="dialog" aria-modal="true" aria-labelledby="dlgFreeT">
@@ -1141,7 +1156,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     msg.className="msg";
     if(!plate&&!auto){msg.textContent="Escribe la placa para generar el boleto.";msg.classList.add("bad");return}
     // Sin placa escrita no hay otra forma de saber que es el mismo vehículo: se ignoran los toques repetidos seguidos
-    if(auto&&Date.now()-lastGenAt<1500)return;
+    if(auto&&Date.now()-lastGenAt<1500){msg.textContent='Espera un segundo y vuelve a tocar para registrar el siguiente vehículo.';msg.classList.add('bad');return}
     var list=load();
     if(auto)plate=autoKey(list);
     if(list.some(function(t){return !t.out&&(t.plate===plate||(!auto&&nk(t.plate)&&nk(t.plate)===nk(plate)))})){
@@ -1944,6 +1959,11 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     });
     var adj=ex.filter(function(t){return t.calc!==undefined&&t.paid<t.calc});
     if(adj.length)rows.push(['Cobros por debajo de lo calculado ('+adj.length+')','-'+money(adj.reduce(function(a,t){return a+(t.calc-(t.paid||0))},0))]);
+    var cxp=cxPend();
+    if(cxp.length){
+      rows.push(['Cobros cancelados ('+cxp.length+')','',1]);
+      cxp.forEach(function(x){rows.push([x.k+' '+x.d+' · '+x.why+' · '+fmt(x.at),'-'+money(x.amt||0)])});
+    }
     var fr=ex.filter(function(t){return t.free});
     if(fr.length){
       rows.push(['Salidas sin cobro ('+fr.length+')','',1]);
@@ -2263,7 +2283,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     lastCut=rec;$('cutPrint').classList.remove('hidden');showCutPdf(rec);
   };
   function loadCuts(){try{var r=localStorage.getItem(CK);return r?JSON.parse(r):cutsMem}catch(e){return cutsMem}}
-  function saveCuts(l){markDirty();cutsMem=l;try{localStorage.setItem(CK,JSON.stringify(l))}catch(e){storageFail()}}
+  function saveCuts(l){var lim=Date.now()-365*86400000;l=l.filter(function(c){return (c.at||0)>=lim});markDirty();cutsMem=l;try{localStorage.setItem(CK,JSON.stringify(l))}catch(e){storageFail()}}
   function money(n){return '$'+n.toFixed(2)}
   function statRow(a,b){
     var d=document.createElement('div');d.className='stat';
@@ -2281,7 +2301,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     $('cutSince').textContent=times.length?'Periodo abierto desde el '+fmt(Math.min.apply(null,times)):'No hay movimientos pendientes de corte.';
     box.innerHTML='';
     cutRows(ex,pin).forEach(function(x){box.appendChild(x[2]?headRow(x[0]):statRow(x[0],x[1]))});
-    var nIn=all.filter(function(t){return !t.out}).length;$('cutInside').textContent=nIn+' vehículos siguen dentro y no entran en este corte.';$('freeBtn').classList.toggle('hidden',!nIn);$('freeBtn').textContent='Salida sin cobro de vehículos dentro ('+nIn+')';
+    var nIn=all.filter(function(t){return !t.out}).length;$('cutInside').textContent=nIn+' vehículos siguen dentro y no entran en este corte.';$('freeBtn').classList.toggle('hidden',!nIn);$('cxBtn').classList.toggle('hidden',!cxItems().length);$('freeBtn').textContent='Salida sin cobro de vehículos dentro ('+nIn+')';
     btn.disabled=!(ex.length||pin.length||pensPend().length||bathPend().length||opsHas());$('cutPartial').disabled=btn.disabled;btn.dataset.sure='';btn.textContent='Corte total';$('cutPrint').classList.add('hidden');$('cutPdf').innerHTML='';
     renderHist();
   }
@@ -2496,7 +2516,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   })();
   $('dlgNoteOk').onclick=function(){$('dlgNote').classList.add('hidden')};
   // ===== Botón atrás del teléfono: cierra lo que esté abierto, vuelve a Entrada y, ahí, pide repetir para salir =====
-  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose',dlgFree:'freeNo',dlgPRec:'prcClose'},backT=0;
+  var DLG_CLOSE={dlg:'dlgNo',dlgDel:'dlgDelNo',dlgBath:'bathNo',dlgIn:'inCancel',dlgAdm:'dlgAdmNo',dlgRec:'recNo',dlgAbout:'abClose',dlgNote:'dlgNoteOk',dlgCaj:'cajOk',dlgPen:'pnPayNo',dlgRest:'dlgRestNo',dlgPhoto:'phCancel',dlgPdf:'pdfClose',dlgFree:'freeNo',dlgCx:'cxNo',dlgPRec:'prcClose'},backT=0;
   function goBack(){
     var open=[].slice.call(document.querySelectorAll('.dlg')).filter(function(d){return !d.classList.contains('hidden')});
     if(open.length){var d=open[open.length-1],b=$(DLG_CLOSE[d.id]);if(b)b.click();else d.classList.add('hidden');return}
@@ -2597,6 +2617,44 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     var m=$('cutMsg');m.className='msg ok';m.textContent=n+(n===1?' vehículo salió':' vehículos salieron')+' sin cobro ('+why+'). Se dejó de cobrar '+money(lost)+'. Quedará en el corte.';
   };
 
+  // ===== Cancelar un cobro equivocado (salida, mensualidad o baño): pide la clave de administrador =====
+  var cxFails=0,cxLock=0;
+  function cxItems(){
+    var o=[];
+    load().forEach(function(t){if(t.out&&!t.free)o.push({k:'Salida',at:t.out,amt:t.paid||0,d:t.id+' · '+(t.plate||'sin placa'),ref:t.id})});
+    pensLoad().forEach(function(p){var ys=p.pays||[],y=ys[ys.length-1];if(y&&!y.cut)o.push({k:'Pensión',at:y.at,amt:y.amt||0,d:p.name+((y.m||1)>1?' · '+y.m+' meses':''),ref:p.id})});
+    bathPend().forEach(function(x){o.push({k:'Baño',at:x.at,amt:x.amt||0,d:'B-'+('0000'+(x.f||0)).slice(-4)+' · '+x.n+(x.n===1?' persona':' personas'),ref:x.at+'|'+(x.f||0)})});
+    return o.sort(function(a,b){return b.at-a.at}).slice(0,60);
+  }
+  $('cxBtn').onclick=function(){
+    var m=$('cutMsg');
+    if(!hasPwd()){m.className='msg bad';m.textContent='Para cancelar cobros primero crea la clave de administrador en Ajustes › Seguridad.';return}
+    var box=$('cxList');box.innerHTML='';
+    cxItems().forEach(function(x,i){var lb=mkEl('label','chk'),r=mkEl('input');r.type='radio';r.name='cxSel';r.value=i;lb.appendChild(r);lb.appendChild(document.createTextNode(x.k+' · '+x.d+' · '+money(x.amt)+' · '+fmt(x.at)));box.appendChild(lb)});
+    $('cxWhy').value='';$('cxPwd').value='';$('cxErr').textContent='';$('dlgCx').classList.remove('hidden');
+  };
+  $('cxNo').onclick=function(){$('dlgCx').classList.add('hidden')};
+  $('cxOk').onclick=function(){
+    var err=$('cxErr'),sel=document.querySelector('#cxList input[name=cxSel]:checked'),why=$('cxWhy').value.trim();
+    if(!sel){err.textContent='Elige el cobro que quieres cancelar.';return}
+    if(why.length<3){err.textContent='Escribe el motivo.';return}
+    if(Date.now()<cxLock){err.textContent='Demasiados intentos. Espera unos segundos.';return}
+    if(!pwdOk($('cxPwd').value)){cxFails++;if(cxFails>=5){cxFails=0;cxLock=Date.now()+30000;err.textContent='Demasiados intentos. Espera 30 segundos.'}else err.textContent='Clave incorrecta.';$('cxPwd').value='';return}
+    cxFails=0;
+    var x=cxItems()[+sel.value];if(!x){err.textContent='Ese cobro ya no existe.';return}
+    if(x.k==='Salida'){
+      var l=load();l.forEach(function(t){if(t.id===x.ref&&t.out){var o=t.out;t.out=null;delete t.paid;delete t.calc;delete t.lost;delete t.co;delete t.con;
+        try{var st=statsLoad();st.forEach(function(r){if(r.k===t.id&&r.i===t.in&&r.o===o){r.o=0;r.a=0}});statsSave(st)}catch(e){}}});save(l);
+    }else if(x.k==='Pensión'){
+      var pl=pensLoad();pl.forEach(function(p){if(p.id===x.ref&&(p.pays||[]).length){var y=p.pays.pop();p.until=(y.from!=null)?y.from:addMonths(y.until,-(y.m||1))}});pensSave(pl);
+    }else{
+      bathSave(bathLoad().filter(function(b){return (b.at+'|'+(b.f||0))!==x.ref}));
+    }
+    var cl=cxLoad();cl.push({at:Date.now(),k:x.k,d:x.d,amt:x.amt,why:why,by:cajActive?cajActive.name:'',cut:0});cxSave(cl);
+    $('dlgCx').classList.add('hidden');refresh();renderCut();
+    var m=$('cutMsg');m.className='msg ok';m.textContent='Cobro cancelado: '+x.k+' '+x.d+' ('+money(x.amt)+'). '+(x.k==='Salida'?'El vehículo vuelve a quedar dentro. ':'')+'Quedará en el corte.';
+  };
+
   // ===== Apertura de operaciones: sin abrir no se registran entradas; el corte total las cierra =====
   function opsReq(){return cfg.opsOn!==false}
   function opsHas(){return !!(cfg.ops&&cfg.ops.at)}
@@ -2642,7 +2700,13 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function bathSum(){return bathPend().reduce(function(a,x){return a+(x.amt||0)},0)}
   function bathMarkCut(now){var l=bathLoad();l.forEach(function(x){if(!x.cut)x.cut=now});bathSave(l)}
   function pensSum(){return pensOnlySum()+bathSum()}
-  function pensMarkCut(now){var l=pensLoad();l.forEach(function(p){(p.pays||[]).forEach(function(y){if(!y.cut)y.cut=now})});pensSave(l);bathMarkCut(now)}
+  function pensMarkCut(now){var l=pensLoad();l.forEach(function(p){(p.pays||[]).forEach(function(y){if(!y.cut)y.cut=now})});pensSave(l);bathMarkCut(now);cxMarkCut(now)}
+  // Registro de cobros cancelados (entra en el corte)
+  var XK='park:cx';
+  function cxLoad(){try{var r=localStorage.getItem(XK);return r?JSON.parse(r):[]}catch(e){return []}}
+  function cxSave(l){markDirty();try{localStorage.setItem(XK,JSON.stringify(l))}catch(e){storageFail()}}
+  function cxPend(){return cxLoad().filter(function(x){return !x.cut})}
+  function cxMarkCut(now){var l=cxLoad(),ch=false;l.forEach(function(x){if(!x.cut){x.cut=now;ch=true}});if(ch)cxSave(l)}
   function pensState(p){
     var now=Date.now();
     if(!p.until||p.until<=(p.start||0))return {k:'nopay',t:'Sin pago todavía'};
@@ -2908,7 +2972,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   function cloudPack(){
     var c2={};try{c2=JSON.parse(JSON.stringify(cfg))}catch(e){}delete c2.pwd;
-    var d={'park:tickets':JSON.stringify(load()),'park:cuts':JSON.stringify(loadCuts()),'park:cfg':JSON.stringify(c2),'park:seq':String(seqGet()),'park:pens':JSON.stringify(pensLoad()),'park:bath':JSON.stringify(bathLoad()),'park:stats':JSON.stringify(statsLoad()),'park:rates':localStorage.getItem('park:rates')||'{}'};
+    var d={'park:tickets':JSON.stringify(load()),'park:cuts':JSON.stringify(loadCuts()),'park:cfg':JSON.stringify(c2),'park:seq':String(seqGet()),'park:pens':JSON.stringify(pensLoad()),'park:bath':JSON.stringify(bathLoad()),'park:cx':JSON.stringify(cxLoad()),'park:stats':JSON.stringify(statsLoad()),'park:rates':localStorage.getItem('park:rates')||'{}'};
     return {v:1,app:'estacionamiento',at:Date.now(),data:d};
   }
   function cloudUI(){
@@ -2994,15 +3058,15 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('dlgRestYes').onclick=function(){
     var pk=restPending&&restPending.data,d=pk&&pk.data;$('dlgRest').classList.add('hidden');
     if(!d||pk.app!=='estacionamiento'||pk.v!==1){cloudSay('El respaldo no corresponde a una versión compatible de PD Park.',true);return}
-    var restoreKeys=['park:tickets','park:cuts','park:seq','park:pens','park:bath','park:stats','park:rates'],before={};
+    var restoreKeys=['park:tickets','park:cuts','park:seq','park:pens','park:bath','park:stats','park:rates','park:cx'],before={};
     try{
-      ['park:tickets','park:cuts','park:pens','park:bath','park:stats'].forEach(function(k){if(d[k]!==undefined&&!Array.isArray(JSON.parse(d[k])))throw new Error('Estructura inválida en '+k)});
+      ['park:tickets','park:cuts','park:pens','park:bath','park:stats','park:cx'].forEach(function(k){if(d[k]!==undefined&&!Array.isArray(JSON.parse(d[k])))throw new Error('Estructura inválida en '+k)});
       if(d['park:cfg']!==undefined){var checkCfg=JSON.parse(d['park:cfg']);if(!checkCfg||typeof checkCfg!=='object'||Array.isArray(checkCfg))throw new Error('Configuración inválida')}
       if(d['park:rates']!==undefined){var checkRates=JSON.parse(d['park:rates']);if(!checkRates||typeof checkRates!=='object'||Array.isArray(checkRates))throw new Error('Tarifas inválidas')}
       if(d['park:seq']!==undefined&&(!/^\d+$/.test(String(d['park:seq']))||Number(d['park:seq'])<0))throw new Error('Secuencia inválida');
       restoreKeys.concat(['park:cfg']).forEach(function(k){before[k]=localStorage.getItem(k)});
       localStorage.setItem('park:prerestore',JSON.stringify({at:Date.now(),data:before}));
-      restoreKeys.forEach(function(k){if(d[k]!==undefined)localStorage.setItem(k,d[k])});
+      var seq0=seqGet();restoreKeys.forEach(function(k){if(d[k]!==undefined)localStorage.setItem(k,d[k])});localStorage.setItem('park:seq',String(Math.max(seq0,parseInt(d['park:seq'],10)||0)));
       if(d['park:cfg']!==undefined){var nc=JSON.parse(d['park:cfg']);if(cfg.pwd)nc.pwd=cfg.pwd;localStorage.setItem('park:cfg',JSON.stringify(nc))}
       cloudDirty=false;location.reload();
     }catch(e){
@@ -3013,8 +3077,10 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   setInterval(function(){if(cloudDirty&&cloudGet().on)cloudBackup(true)},5*60000);
   document.addEventListener('visibilitychange',function(){if(document.hidden&&cloudDirty&&cloudGet().on)cloudBackup(true)});
   // Respaldo local: no incluye credenciales cloud, licencia ni fotos de IndexedDB.
-  var localBackupKeys=['park:tickets','park:cuts','park:seq','park:cfg','park:pens','park:bath','park:stats','park:rates'];
+  var localBackupKeys=['park:tickets','park:cuts','park:seq','park:cfg','park:pens','park:bath','park:stats','park:rates','park:cx'];
   var localBackupFileData=null;
+  // La copia de seguridad que se guarda antes de restaurar se borra a los 7 días (ocupa mucho espacio)
+  ['park:prerestore','park:local-prerestore'].forEach(function(k){try{var v=JSON.parse(localStorage.getItem(k)||'null');if(v&&(!v.at||Date.now()-v.at>7*86400000))localStorage.removeItem(k)}catch(e){try{localStorage.removeItem(k)}catch(e2){}}});
   function localBackupSay(t,bad){var el=$('localBackupMsg');el.className='msg '+(bad?'bad':'ok');el.textContent=t;}
   function localBackupPack(){
     var data={};
@@ -3053,7 +3119,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(!p||p.format!=='PD-PARK-LOCAL-BACKUP'||p.version!==1||!p.data||typeof p.data!=='object'||Array.isArray(p.data))throw new Error('El archivo no es un respaldo válido de PD Park.');
     var d=p.data;
     Object.keys(d).forEach(function(k){if(localBackupKeys.indexOf(k)<0||typeof d[k]!=='string')throw new Error('El respaldo contiene un campo no permitido.');});
-    ['park:tickets','park:cuts','park:pens','park:bath','park:stats'].forEach(function(k){if(d[k]!==undefined&&!Array.isArray(JSON.parse(d[k])))throw new Error('Datos inválidos en '+k+'.')});
+    ['park:tickets','park:cuts','park:pens','park:bath','park:stats','park:cx'].forEach(function(k){if(d[k]!==undefined&&!Array.isArray(JSON.parse(d[k])))throw new Error('Datos inválidos en '+k+'.')});
     ['park:cfg','park:rates'].forEach(function(k){if(d[k]!==undefined){var v=JSON.parse(d[k]);if(!v||typeof v!=='object'||Array.isArray(v))throw new Error('Configuración inválida en '+k+'.')}});
     if(d['park:seq']!==undefined&&(!/^\d+$/.test(d['park:seq'])||Number(d['park:seq'])<0))throw new Error('Secuencia de boletos inválida.');
     return p;
@@ -3081,7 +3147,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     try{
       localBackupKeys.forEach(function(k){old[k]=localStorage.getItem(k)});
       localStorage.setItem('park:local-prerestore',JSON.stringify({at:Date.now(),data:old}));
-      localBackupKeys.forEach(function(k){if(d[k]!==undefined)localStorage.setItem(k,d[k]);else if(k!=='park:cfg')localStorage.removeItem(k)});
+      var seq0=seqGet();localBackupKeys.forEach(function(k){if(d[k]!==undefined)localStorage.setItem(k,d[k]);else if(k!=='park:cfg')localStorage.removeItem(k)});localStorage.setItem('park:seq',String(Math.max(seq0,parseInt(d['park:seq'],10)||0)));
       // Mantener la clave administrativa configurada en este dispositivo; el archivo no la transporta.
       if(d['park:cfg']!==undefined){var imported=JSON.parse(d['park:cfg']),currentCfg=old['park:cfg']?JSON.parse(old['park:cfg']):{};if(currentCfg.pwd)imported.pwd=currentCfg.pwd;localStorage.setItem('park:cfg',JSON.stringify(imported));}
       localBackupSay('Respaldo restaurado. La aplicación se reiniciará.');setTimeout(function(){location.reload()},700);
@@ -3477,7 +3543,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   $('plate').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();$('gen').click()}});
   $('plate').addEventListener('input',function(){this.classList.toggle('plLong',this.value.length>10)});
   // Salida manual: se captura la placa (o la clave) y se calcula el cobro igual que con el QR
-  function manPick(t){$('manList').innerHTML='';$('manMsg').textContent='';$('code').value=t.id;$('calc').click()}
+  var manCalc=false;
+  function manPick(t){$('manList').innerHTML='';$('manMsg').textContent='';$('code').value=t.id;manCalc=true;$('calc').click();manCalc=false}
   function manFind(){
     var n=function(x){return String(x).toUpperCase().replace(/[^A-Z0-9]/g,'')},q=n($('man').value),m=$('manMsg'),box=$('manList');
     box.innerHTML='';m.className='msg';m.textContent='';
@@ -3528,7 +3595,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     else total=Math.ceil(mins/60)*rate;
     return {total:total,mins:mins};
   }
-  function fareNow(t,now){var f=baseFare(t,now).total;if(t.pen){var pp=pensGet(t.pen);if(pp&&now<=pp.until)f=0}return f}
+  function penFor(t){if(t.pen){var a=pensGet(t.pen);if(a)return a}return (!t.auto&&t.plate)?pensFind(t.plate):null}
+  function fareNow(t,now){var f=baseFare(t,now).total,pp=penFor(t);if(pp&&now<=pp.until)f=0;return f}
   function parseCode(s){
     s=s.trim().toUpperCase();
     return s.indexOf("PARK|")===0?s.split("|")[1]:s;
@@ -3543,8 +3611,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(t.out){msg.textContent="Este boleto ya fue cobrado el "+fmt(t.out)+".";msg.classList.add("bad");return}
     var bf=baseFare(t,Date.now()),mins=bf.mins,total=bf.total;
     var penNote="",penBad2=false;
-    if(t.pen){var pp=pensGet(t.pen);if(pp&&Date.now()<=pp.until){total=0;penNote="Pensionado: "+pp.name+". "+pensState(pp).t+". Sin cobro."}else if(pp){penNote="La pensión de "+pp.name+" venció el "+fdate(pp.until)+". Se cobra la tarifa normal.";penBad2=true}}
-    var isLost=false;if(lostMode&&!(t.pen&&penNote.indexOf("Sin cobro")>-1)){total=parseFloat(cfg.lostFee)||0;penNote="Boleto extraviado: tarifa fija de $"+total.toFixed(2)+".";penBad2=false;isLost=true}lostMode=false;
+    var pp=penFor(t);if(pp){if(Date.now()<=pp.until){total=0;penNote="Pensionado: "+pp.name+". "+pensState(pp).t+". Sin cobro."}else if(pp){penNote="La pensión de "+pp.name+" venció el "+fdate(pp.until)+". Se cobra la tarifa normal.";penBad2=true}}
+    var isLost=false;if(lostMode&&manCalc){if(!(penNote.indexOf("Sin cobro")>-1)){total=parseFloat(cfg.lostFee)||0;penNote="Boleto extraviado: tarifa fija de $"+total.toFixed(2)+".";penBad2=false;isLost=true}lostMode=false}
     current={id:t.id,total:total,calc:total,lost:isLost};
     $("amount").textContent="$"+total.toFixed(2);$("adj").value=total.toFixed(2);
     $("rPlate").textContent=t.plate+" ("+(NAMES[t.type]||"Auto")+(t.plan==="dia"?", todo el día":"")+")";$("rIn").textContent=fmt(t.in);
