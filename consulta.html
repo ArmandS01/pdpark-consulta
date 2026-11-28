@@ -75,21 +75,27 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
   <section class="card" id="login" hidden>
     <h2>Conectar con tu estacionamiento</h2>
     <form id="loginForm" autocomplete="off">
+      <p class="note" id="preNote" hidden>Este enlace ya trae los datos del estacionamiento. Solo escribe tu correo y tu contraseña.</p>
+      <div id="advFields">
       <label for="fUrl">Dirección del proyecto (URL)</label>
       <input id="fUrl" type="url" placeholder="https://xxxx.supabase.co" autocapitalize="off" required>
       <label for="fKey">Clave pública (anon key)</label>
       <input id="fKey" type="text" autocapitalize="off" required>
+      </div>
       <label for="fMail">Correo de la cuenta</label>
       <input id="fMail" type="email" autocapitalize="off" required>
       <label for="fPass">Contraseña</label>
       <input id="fPass" type="password" required>
+      <div id="advDev">
       <label for="fDev">Nombre del teléfono del estacionamiento</label>
       <input id="fDev" type="text" placeholder="principal" maxlength="30">
+      </div>
       <button class="btn" type="submit">Conectar</button>
       <button class="btn ghost" type="button" id="demoBtn">Ver un ejemplo</button>
+      <button class="btn ghost" type="button" id="advBtn" hidden>Escribir otro proyecto o teléfono</button>
       <p class="msg" id="loginMsg" role="status"></p>
     </form>
-    <p class="note">Usa la misma cuenta y dirección que en PD Park › Ajustes › Respaldo en la nube. La contraseña no se guarda en este teléfono.</p>
+    <p class="note">Usa el correo y la contraseña de tu estacionamiento (los mismos de PD Park › Ajustes › Respaldo en la nube). Solo verás los datos de esa cuenta. La contraseña no se guarda en este teléfono.</p>
   </section>
 
   <div id="board" hidden>
@@ -155,7 +161,9 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
 
 <script>
 (function(){
-  var $=function(i){return document.getElementById(i)},CK='pdpark:consulta',per=1,data=null,demo=false,timer=null,tick=null,lastOk=0,busy=false;
+  var $=function(i){return document.getElementById(i)},CK='pdpark:consulta',per=1,data=null,demo=false,timer=null,tick=null,lastOk=0,busy=false,advOpen=false;
+  // Opcional: proyecto de Supabase por defecto (la anon key es pública por diseño). Déjalos vacíos si no se usan.
+  var DEF_URL='',DEF_KEY='';
   function ls(){try{return JSON.parse(localStorage.getItem(CK)||'{}')}catch(e){return {}}}
   function lsSet(o){try{localStorage.setItem(CK,JSON.stringify(o))}catch(e){}}
   var money=function(n){return '$'+(Math.round((n||0)*100)/100).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2})};
@@ -240,7 +248,10 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
   function stop(){clearInterval(timer);clearInterval(tick)}
 
   function showBoard(){$('login').hidden=true;$('board').hidden=false}
-  function showLogin(msg){stop();$('board').hidden=true;$('login').hidden=false;var c=ls();$('fUrl').value=c.url||'';$('fKey').value=c.key||'';$('fMail').value=c.email||'';$('fDev').value=c.dev||'';$('loginMsg').textContent=msg||'';$('loginMsg').className='msg'+(msg?' bad':'')}
+  function showLogin(msg){stop();$('board').hidden=true;$('login').hidden=false;var c=ls();
+    if(!c.url&&DEF_URL&&DEF_KEY){c.url=DEF_URL;c.key=DEF_KEY}
+    var pre=!!(c.url&&c.key)&&!advOpen;$('advFields').hidden=pre;$('advDev').hidden=pre;$('preNote').hidden=!pre;$('advBtn').hidden=!pre;
+    $('fUrl').value=c.url||'';$('fKey').value=c.key||'';$('fMail').value=c.email||'';$('fDev').value=c.dev||'';$('loginMsg').textContent=msg||'';$('loginMsg').className='msg'+(msg?' bad':'')}
 
   $('loginForm').addEventListener('submit',function(e){
     e.preventDefault();var c={url:$('fUrl').value.trim(),key:$('fKey').value.trim(),email:$('fMail').value.trim(),dev:$('fDev').value.trim()||'principal'},m=$('loginMsg');
@@ -255,6 +266,15 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){per=+b.getAttribute('data-per');Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});render()}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&!demo&&ls().rt)fetchNow()});
 
+  $('advBtn').onclick=function(){advOpen=true;showLogin('')};
+  // Enlace compartido desde PD Park: consulta.html#u=<proyecto>&k=<anon key>&d=<teléfono>
+  (function(){
+    var o={};location.hash.replace(/^#/,'').split('&').forEach(function(p){var i=p.indexOf('=');if(i>0){try{o[p.slice(0,i)]=decodeURIComponent(p.slice(i+1))}catch(e){}}});
+    if(!o.u||!o.k||!/^https:\/\//i.test(o.u))return;
+    var c=ls();if(c.url!==o.u||c.key!==o.k)c={};   // otro proyecto: se cierra la sesión anterior
+    c.url=o.u;c.key=o.k;if(o.d)c.dev=o.d;lsSet(c);
+    try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+  })();
   if(/[#&]demo\b/.test(location.hash)){demo=true;data=demoData();showBoard();render();age()}
   else if(ls().rt){showBoard();setLive(false,'Conectando…');start()}
   else showLogin('');
