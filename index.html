@@ -1150,7 +1150,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   var lastGenAt=0;
   function doGen(photo){
     show("entrada");
-    if(licBlocked()){var lm=$(inOpenFlag?"inMsg":"entMsg");lm.className="msg bad";lm.textContent="Licencia vencida: no se pueden generar boletos nuevos. Activa una clave en Ajustes › Licencia.";return}
+    if(licBlocked()){var lm=$(inOpenFlag?"inMsg":"entMsg");lm.className="msg bad";lm.textContent=licSt.noKey?"Falta la clave de licencia: no se pueden generar boletos. Pide tu clave con el ID de Ajustes › Licencia.":"Licencia vencida: no se pueden generar boletos nuevos. Activa una clave en Ajustes › Licencia.";return}
     if(!opsIsOpen()){var om=$(inOpenFlag?"inMsg":"entMsg");om.className="msg bad";om.textContent="Operaciones cerradas: toca Abrir operaciones para registrar entradas.";inClose();opsUI();return}
     var typed=$("plate").value.trim().toUpperCase(),auto=cfg.mode==="auto"||($("withPhoto").checked&&!typed),plate=auto?"":typed,msg=$(inOpenFlag?"inMsg":"entMsg");
     msg.className="msg";
@@ -2851,8 +2851,32 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   function licOn(){return !!LIC_PUB&&LIC_PUB.indexOf('__')!==0}
   function licGet(){try{return JSON.parse(localStorage.getItem(LIC_KEY)||'{}')}catch(e){return {}}}
   function licSet(o){try{localStorage.setItem(LIC_KEY,JSON.stringify(o))}catch(e){}}
+  // ID del teléfono: en la app Android se saca del identificador del dispositivo (no cambia al desinstalar y reinstalar)
+  var LIC_A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function licDevPlugin(){var P=window.Capacitor&&window.Capacitor.Plugins;return P&&P.Device&&typeof P.Device.getId==='function'?P.Device:null}
+  function licIdCode(raw){var h=sha256('pdpark-dev:'+raw),s='';for(var i=0;i<8;i++)s+=LIC_A[parseInt(h.substr(i*2,2),16)%LIC_A.length];return s.slice(0,4)+'-'+s.slice(4)}
+  function licKeyInfo(key){try{return JSON.parse(new TextDecoder().decode(b64u(String(key).split('.')[0])))}catch(e){return null}}
+  var licInit=(function(){
+    var D=licDevPlugin(),pr=D?D.getId().then(function(r){return r&&(r.identifier||r.uuid)||null},function(){return null}):Promise.resolve(null);
+    return pr.then(function(raw){
+      var d=licGet(),day=86400000;
+      // Primera vez con esta versión: si ya había prueba en curso, se respeta; las instalaciones nuevas necesitan clave
+      if(!d.v2){d.v2=1;if(d.first)d.legacyTrial=1}
+      if(raw){
+        var code=licIdCode(raw);
+        if(d.dev!==code){
+          // Si tiene una licencia vigente hecha para el ID anterior, se conserva ese ID hasta que venza
+          var ki=d.key?licKeyInfo(d.key):null,keep=!!(d.dev&&ki&&ki.d===d.dev&&ki.e&&Date.now()<ki.e+LIC_GRACE*day);
+          if(!keep)d.dev=code;
+        }
+        d.devSrc='android';
+      }
+      licSet(d);
+    });
+  })();
   function licDev(){
     var d=licGet();
+    if(!d.dev&&licDevPlugin())return '…';
     if(!d.dev){var A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',s='',r=new Uint8Array(8);try{crypto.getRandomValues(r)}catch(e){for(var j=0;j<8;j++)r[j]=Math.floor(Math.random()*256)}
       for(var i=0;i<8;i++)s+=A[r[i]%A.length];d.dev=s.slice(0,4)+'-'+s.slice(4);licSet(d)}
     return d.dev;
@@ -2887,6 +2911,8 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
       var g=Math.ceil((p.e+LIC_GRACE*day-now)/day);
       return g>0?{k:'grace',left:g,until:p.e,client:p.c}:{k:'expired',until:p.e,client:p.c};
     }
+    // Sin clave: solo conserva la prueba quien ya la tenía antes de esta versión; las instalaciones nuevas necesitan una clave
+    if(!d.legacyTrial)return {k:'expired',noKey:true};
     var tl=Math.ceil((d.first+LIC_TRIAL*day-now)/day);
     return tl>0?{k:'trial',left:tl}:{k:'expired',trialOver:true};
   }
@@ -2898,6 +2924,7 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
     if(s.k==='warn')return 'Tu licencia vence en '+dd(s.left)+' ('+fdate(s.until)+').';
     if(s.k==='grace')return 'Licencia vencida el '+fdate(s.until)+'. Quedan '+dd(s.left)+' de gracia.';
     if(s.k==='wrongdev')return 'Esa clave es de otro teléfono. Pide una con el ID de este.';
+    if(s.k==='expired'&&s.noKey)return 'Esta app necesita una clave para funcionar. Envía el ID de este teléfono ('+licDev()+') para recibir tu clave de prueba. Mientras tanto, solo consulta: no se generan boletos nuevos.';
     if(s.k==='expired')return (s.trialOver?'La prueba terminó.':'La licencia venció el '+fdate(s.until)+'.')+' Modo solo consulta: no se generan boletos nuevos.';
     return '';
   }
@@ -2911,8 +2938,9 @@ body .mini,body .crow .mini,body .stat .mini,body .cpdf .mini{font-size:15px}
   }
   function licRefresh(){
     if(!licOn()){licSt={k:'off'};licUI();return Promise.resolve()}
-    var d=licGet(),pr=d.key?licVerify(d.key).then(function(p){return p},function(){return null}):Promise.resolve(null);
-    return pr.then(function(p){licSt=licCompute(p);licUI()});
+    return licInit.then(function(){
+      var d=licGet();return d.key?licVerify(d.key).then(function(p){return p},function(){return null}):null;
+    }).then(function(p){licSt=licCompute(p);licUI()});
   }
   $('licBarBtn').onclick=function(){show('tarifas');setPage('licencia')};
   $('licCopy').onclick=function(){
