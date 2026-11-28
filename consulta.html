@@ -37,7 +37,7 @@ h2{font:700 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;col
 .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .big{font:700 64px/0.9 var(--num);font-variant-numeric:tabular-nums}
 .big small{font:600 14px var(--font);color:var(--muted);margin-left:6px}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.grid.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .kpi b{display:block;font:700 30px/1 var(--num);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .kpi span{font-size:12px;color:var(--muted)}
@@ -105,11 +105,12 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
       <div class="chips" id="insideTypes"></div>
     </section>
 
-    <div class="grid" style="margin-top:14px">
+    <div class="grid g2" style="margin-top:14px">
       <div class="kpi money"><span id="moneyLbl">Recaudado hoy</span><b id="money">$0</b><div class="delta" id="delta"></div></div>
+      <div class="kpi"><b id="veh">$0</b><span>Vehículos</span></div>
+      <div class="kpi"><b id="bat">$0</b><span>Baño</span></div>
       <div class="kpi"><b id="ent">0</b><span>Entradas</span></div>
       <div class="kpi"><b id="sal">0</b><span>Salidas</span></div>
-      <div class="kpi"><b id="bat">$0</b><span>Baño</span></div>
     </div>
 
     <section class="card" style="margin-top:14px">
@@ -184,8 +185,8 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
     $('title').textContent=data.name||'PD Park';
     $('inside').textContent=data.inside||0;
     var it=$('insideTypes');it.innerHTML='';Object.keys(data.insideTypes||{}).forEach(function(k){var c=document.createElement('span');c.className='chip';c.textContent=k+' '+data.insideTypes[k];it.appendChild(c)});
-    $('moneyLbl').textContent=per===1?'Recaudado hoy':'Recaudado en '+per+' días';
-    $('money').textContent=money(m.veh+m.bat);$('ent').textContent=m.ent;$('sal').textContent=m.sal;$('bat').textContent=money(m.bat);
+    $('moneyLbl').textContent=(per===1?'Recaudado hoy':'Recaudado en '+per+' días')+' (vehículos + baño)';
+    $('money').textContent=money(m.veh+m.bat);$('veh').textContent=money(m.veh);$('ent').textContent=m.ent;$('sal').textContent=m.sal;$('bat').textContent=money(m.bat);
     var y=all[all.length-2],dl=$('delta');
     if(y){var t=(today.veh||0)+(today.bat||0),yy=(y.veh||0)+(y.bat||0),df=t-yy;dl.textContent='Ayer cerró con '+money(yy)+(df>=0?'. Hoy va '+money(df)+' arriba.':'. Hoy va '+money(-df)+' abajo.')}else dl.textContent='';
     var tb=$('types');tb.innerHTML='';var tk=Object.keys(m.types).sort(function(a,b){return m.types[b]-m.types[a]}),mx=tk.length?m.types[tk[0]]:1;
