@@ -62,6 +62,8 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
 :root[data-theme="dark"] .btn{color:#06210f}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06210f}}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+:root[data-theme="dark"] .btn.ghost{color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.ghost{color:var(--ink)}}
 .msg{font-size:14px;margin:8px 0 0}.msg.bad{color:var(--bad)}
 .links{display:flex;gap:8px}.links .btn{flex:1}
 </style>
@@ -129,6 +131,20 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
       <p class="note" id="daysNote"></p>
     </section>
 
+    <section class="card" style="margin-top:14px">
+      <h2 id="penTitle">Pensiones mensuales</h2>
+      <p class="note" style="margin-top:0">Va aparte: no se suma a lo recaudado de vehículos y baño.</p>
+      <div class="grid">
+        <div class="kpi money"><span id="penLbl">Cobrado hoy</span><b id="penMoney">$0</b></div>
+        <div class="kpi"><b id="penN">0</b><span>Mensualidades cobradas</span></div>
+        <div class="kpi"><b id="penOk">–</b><span>Vigentes</span></div>
+        <div class="kpi"><b id="penVe">–</b><span>Vencidas o sin pago</span></div>
+      </div>
+      <div class="cols" id="penChart" role="img" aria-label="Pensiones cobradas por día" style="margin-top:12px"></div>
+      <div class="axis" id="penAxis"></div>
+      <p class="note" id="penNote"></p>
+    </section>
+
     <div class="links" style="margin-top:14px">
       <button class="btn ghost" type="button" id="refresh">Actualizar ahora</button>
       <button class="btn ghost" type="button" id="logout">Salir</button>
@@ -151,9 +167,9 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
     for(k=29;k>=0;k--){
       var d=new Date(now);d.setDate(d.getDate()-k);var wk=d.getDay(),f=(wk===5||wk===6)?1.4:(wk===0?0.7:1),ent=Math.round((60+((k*37)%25))*f),sal=k===0?ent-9:ent;
       var occ=[];for(h=0;h<24;h++){var x=Math.max(0,Math.round(14*Math.exp(-Math.pow((h-13)/4.2,2))*f+(h>=8&&h<=20?2:0)));occ.push(k===0&&h>new Date().getHours()?0:x)}
-      var en=k===0?Math.round(ent*0.6):ent;days.push({s:d.getTime(),ent:en,sal:k===0?Math.round(sal*0.5):sal,veh:Math.round(sal*(k===0?0.5:1)*24),bat:Math.round(sal*0.5*3.5),types:{Auto:Math.round(en*0.72),Moto:Math.round(en*0.22),Camioneta:en-Math.round(en*0.72)-Math.round(en*0.22)},occ:occ});
+      var en=k===0?Math.round(ent*0.6):ent;var pn=(k%9===2)?2:((k%6===1)?1:0);days.push({s:d.getTime(),pen:pn*500,penN:pn,ent:en,sal:k===0?Math.round(sal*0.5):sal,veh:Math.round(sal*(k===0?0.5:1)*24),bat:Math.round(sal*0.5*3.5),types:{Auto:Math.round(en*0.72),Moto:Math.round(en*0.22),Camioneta:en-Math.round(en*0.72)-Math.round(en*0.22)},occ:occ});
     }
-    return {v:1,name:'Estacionamiento Centro',at:Date.now(),days:days,inside:9,insideTypes:{Auto:6,Moto:2,Camioneta:1}};
+    return {v:1,name:'Estacionamiento Centro',at:Date.now(),days:days,inside:9,insideTypes:{Auto:6,Moto:2,Camioneta:1},pens:{ok:14,ve:3}};
   }
 
   /* ---------- pantalla ---------- */
@@ -186,6 +202,15 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-
     ds.forEach(function(d,i){var c=document.createElement('div');c.className='col'+(i===ds.length-1?' today':'');c.style.height=Math.max(2,tot[i]/dm*100)+'%';c.title=new Date(d.s).toLocaleDateString('es-MX')+': '+money(tot[i]);db.appendChild(c);var a=document.createElement('span');a.textContent=(n<=7||i%5===0)?DAYS[new Date(d.s).getDay()]+(n>7?new Date(d.s).getDate():''):'';da.appendChild(a)});
     var best=tot.indexOf(Math.max.apply(null,tot));
     $('daysNote').textContent='Recaudado por día, hoy en amarillo. Mejor día: '+new Date(ds[best].s).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+' con '+money(tot[best])+'.';
+    // pensiones (aparte)
+    var hasPen=all.some(function(d){return d.pen!==undefined}),pm=0,pnn=0;
+    sel.forEach(function(d){pm+=d.pen||0;pnn+=d.penN||0});
+    $('penLbl').textContent=per===1?'Cobrado hoy':'Cobrado en '+per+' días';
+    $('penMoney').textContent=money(pm);$('penN').textContent=pnn;
+    $('penOk').textContent=data.pens?data.pens.ok:'–';$('penVe').textContent=data.pens?data.pens.ve:'–';
+    var pv=ds.map(function(d){return d.pen||0}),pmx=Math.max.apply(null,pv.concat([1])),pb=$('penChart'),pa=$('penAxis');pb.innerHTML='';pa.innerHTML='';
+    ds.forEach(function(d,i){var c=document.createElement('div');c.className='col'+(i===ds.length-1?' today':'');c.style.height=Math.max(2,pv[i]/pmx*100)+'%';c.title=new Date(d.s).toLocaleDateString('es-MX')+': '+money(pv[i]);pb.appendChild(c);var a=document.createElement('span');a.textContent=(n<=7||i%5===0)?DAYS[new Date(d.s).getDay()]+(n>7?new Date(d.s).getDate():''):'';pa.appendChild(a)});
+    $('penNote').textContent=!hasPen?'Para ver las pensiones, actualiza PD Park en el teléfono a la versión más reciente.':(pm>0?'Dinero de pensiones por día ('+(per===1?'últimos 7 días':'últimos '+n+' días')+').':'No se cobraron mensualidades en este periodo.');
   }
   function setLive(ok,txt){$('live').className='live'+(ok?' ok':'');$('liveTxt').textContent=txt}
   function age(){if(demo){setLive(true,'Ejemplo');return}if(!data)return;var s=Math.max(0,Math.round((Date.now()-data.at)/1000)),t=s<60?s+' s':s<3600?Math.round(s/60)+' min':Math.round(s/3600)+' h';
