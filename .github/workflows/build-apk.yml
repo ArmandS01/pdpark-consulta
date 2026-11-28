@@ -7,6 +7,9 @@ on:
       - '**.md'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -167,3 +170,28 @@ jobs:
           name: estacionamiento-apk
           path: salida/pd-park.apk
           retention-days: 30
+
+      - name: Publicar el APK en Releases (solo desde main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          VER="1.${{ github.run_number }}"
+          FECHA=$(TZ=America/Mexico_City date '+%d/%m/%Y %H:%M')
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            FIRMA="APK firmado: se instala encima de la versión anterior sin perder datos."
+          else
+            FIRMA="APK de prueba SIN firma: para actualizar hay que desinstalar la versión anterior (se pierden los datos). Configura KEYSTORE_BASE64 y KEYSTORE_PASSWORD."
+          fi
+          if gh release view "v$VER" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "v$VER" salida/pd-park.apk --repo "${{ github.repository }}" --clobber
+            echo "La versión v$VER ya existía: se reemplazó el APK."
+            exit 0
+          fi
+          gh release create "v$VER" salida/pd-park.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "PD Park $VER" \
+            --notes "Versión $VER compilada el $FECHA. $FIRMA Para instalar: toca pd-park.apk desde el teléfono." \
+            --latest
